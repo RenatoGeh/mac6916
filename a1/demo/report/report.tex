@@ -1,0 +1,333 @@
+\documentclass{amsart}
+
+% enumerate enviromnent with user-specified numerators
+\usepackage{enumerate}
+
+% for including external figures (pdf, eps)
+\usepackage{graphicx}
+
+
+% for pretty-printed source code
+\usepackage{listings}
+% environment for C code
+\lstnewenvironment{code}
+ {\lstset{ %
+     extendedchars=true,
+     stringstyle=\ttfamily \scriptsize, %
+     showstringspaces=false, aboveskip={1.\baselineskip}, %
+     identifierstyle=\ttfamily \scriptsize \bf, %
+     language=C,           %
+     basicstyle=\ttfamily \small,  %\footnotesize
+     numberstyle=\footnotesize, %
+     % keywordstyle=\bf,       % keyword style
+     tabsize=1,                 % sets default tabsize to 2 spaces
+     captionpos=t,              % sets the caption-position to bottom
+     breaklines=true,           % sets automatic line breaking
+     breakatwhitespace=false,   % sets if automatic breaks should only happen at whitespace
+     %backgroundcolor=\color{black!10},
+   }
+} {}
+
+
+% custom commands
+\newcommand{\set}[1]{\mathcal{#1}}
+\newcommand{\pr}{\mathbb{P}}
+\renewcommand{\implies}{\Rightarrow}
+
+\title[]{1. Introduction to Probabilistic Models}
+\author[]{Denis D. Mau\'a\\NUSP: 3730790}
+\date{\today}
+
+\begin{document}
+
+\begin{abstract}
+  This document describes how to specify and query probabilistic models
+  specified in generalized propositional logic. Sentences are composed
+  of logical constructs (negation, disjunction, conjunction, variable
+  assignment), represented as expression trees. Probabilistic models are
+  represented by tables of numbers representing the distribution over
+  valuations. Queries are computed by enumeration of valuations, and
+  truth-table implication. The connection between the standard,
+  Kolmogorovian formulation of probabilistic models over algebras and
+  the formulation over (generalized) propositional logic is formally
+  presented. The operations are implemented in a accompanying source
+  code, which is also described here.
+\end{abstract}
+
+
+\maketitle
+
+\section{Reasoning under Uncertainty}
+
+There have been many attempts at representing and handling uncertain
+knowledge in a systematic way. Early approaches were based on monotonic
+logics such as propositional and first-order logic. The logical
+approaches had the advantage of representing knowledge modularly, and
+being self-consistent. Specifying knowledge in those formalisms required
+a high level of detail, one that was often absent in applications. The
+difficulty of representing incomplete or uncertain knowledge led to the
+creation of several logic-based formalisms that contained some calculus
+over beliefs. Ultimately, it was advocated that any formalism that did
+not comply with probability theory was doomed to produce inconsistent
+and incoherent results. Bayesian networks appeared in the 90's as a way
+of reconciling the modular character of pure logical approaches with the
+solid foundations of probability theory. In this report, we review the
+basics of probability theory. We adopt a formal language that
+generalizes propositional logic with multivalued variables.
+
+\section{Generalized Propositional Logic}
+
+In order to formally represent knowledge, we need to define a
+language. The basic ingredients of our language are variables (e.g.,
+$X,Y,Z$) which denote properties or attributes of the domain. Each
+variable $X$ takes values in domain $\text{dom}(X)$. We also have logic
+connectives ($\wedge$, $\vee$, $\neg$) and variable assignment $X=x$,
+$x \in \text{dom}(X)$. Consider a finite set of variables
+$X_1,\dotsc,X_n$. A language $\set{L}(X_1,\dotsc,X_n)$ is inductively
+defined as follows.
+\begin{enumerate}
+\item For any variable $X$ and value $x \in \Omega_X$, $(X=x)$ is a
+  sentence.
+\item If $\phi$ is a sentence, then so is $\neg (\phi)$.
+\item If $\phi_1$ and $\phi_2$ are sentences, then so is $(\phi_1 \wedge \phi_2)$ and $(\phi_1 \vee \phi_2)$.
+\item Nothing else is a sentence.
+\end{enumerate}
+
+We often use the standard precedence over connectives
+($\neg < \wedge < \vee$) and drop some of the parentheses in the
+formulas.
+
+The meaning of complex sentences is based on the concepts of valuations
+and satisfaction. A \emph{valuation} is a function $\nu$ that maps each
+variable $X$ to a value $x \in \text{dom}(X)$. A valuation describes a
+context or state of affairs of the domain. The meaning of an arbitrary
+sentence is given by the \emph{satisfaction} relation $\models$ over
+pairs of valuation and sentence. It is standard to write
+$\nu \models \phi$ to indicate that the pair $(\nu, phi)$ is in the
+relation. We then say that $\nu$ satisfies $\phi$ ($\phi$ is satisfied
+by $\nu$). We also write $\nu \not\models \phi$ to indicate that
+$(\nu,\phi)$ is \emph{not} in the relation. In this case, we say that
+$\nu$ does not satisfy $\phi$ ($\phi$ is not satisfied by $\nu$). The satisfaction relation is inductively defined by:
+\begin{enumerate}
+\item $\nu \models X=x$ if and only if $\nu(X)=x$.
+\item $\nu \models \neg \phi$ if and only if $\nu \not\models \phi$.
+\item $\nu \models \phi \wedge \psi$ if and only if
+  $\nu \models \phi$ and $\nu \models \psi$.
+\item $\nu \models \phi \vee \psi$ if and only if
+  $\nu \models \phi$ or $\nu \models \psi$.
+\end{enumerate}
+
+It follows that $\nu \models \phi \vee \neg \phi$ for any valuation
+$\nu$ and sentence $\phi$. A sentence $\phi \vee \neg \phi$ is called a
+\emph{tautology}. Similarly, $\nu \models \phi \wedge \neg \phi$ for any
+valuation and sentence. A sentence $\phi \wedge \neg \phi$ is called a
+\emph{contradiction}. Two sentences $\phi$ and $\psi$ are \emph{mutually
+  exclusive} if $\nu \models \neg(\phi \wedge \psi)$ for every valuation
+$\nu$. A set of sentences is mutually exclusive if they are pairwise
+mutually exclusive.  A set of sentences $\phi_1,\dotsc,\phi_n$ is
+\emph{exhaustive} if each valuation satisfies at least one model, that
+is, if $\nu \models \phi_1 \vee \dotsb \vee \phi_n$ for each $\nu$.
+
+\section{Probabilistic Models}
+
+A probabilistic model is a pair $(\set{L}(X_1,\dotsc,X_n), \pr)$ where
+$\set{L}$ is a language of valid sentences as defined, and $\pr$ is a
+function from $\set{L}$ to $[0,1]$ such that
+\begin{align} \label{probability-function}
+  \sum_{\nu} \pr(\nu)  &= 1 \,,\\ \intertext{where $\pr(\nu)$ denotes
+$\pr(X_1=\nu(X_1) \wedge \dotsb \wedge X_n=\nu(X_n))$, and}
+  \pr(\phi) &= \sum_{\nu: \nu \models \phi} \pr(\nu) 
+\end{align}
+for any sentence $\phi$. The function $\pr$ is called a probability
+function or probability measure on $\set{L}$. The following results are
+true for sentences $\phi$ and $\psi$.
+\begin{enumerate} 
+\item $\pr(\neg \phi) = 1- \pr(\phi)$.
+\item $\pr(\phi \vee \neg \phi) = 1$ and $\pr(\phi \wedge \neg \phi)=0$.
+\item $\pr(\phi \vee \psi)=\pr(\phi)+\pr(\psi)-\pr(\phi \wedge \psi)$.
+\item $\pr(\phi)=\sum_i \pr(\phi \wedge \psi_i)$ for mutually exclusive and disjoint events $\phi_1,\dotsc,\phi_n$.
+\end{enumerate}
+
+The \emph{conditional probability} of $\phi$ given $\psi$ is
+\begin{equation} \label{conditional-probability}
+\pr(\phi|\psi) = \frac{\pr(\phi \wedge \psi)}{\pr(\psi)} \, ,
+\end{equation}
+whenever $\pr(\psi)>0$.  In particular, the unconditional probability
+$\pr(\phi)$ equals the conditional probability
+$\pr(\phi|\phi \vee \neg \phi)$.
+
+A \emph{field of sets} is a pair $(\Omega,\set{F})$ where $\set{F}$ is a
+non-empty collection of subsets of $\Omega$ closed under intersection,
+union and complement. The elements of $\set{F}$ are called \emph{events}
+and $\Omega$ the universe. 
+
+The standard (Kolmogorov) definition of probabilistic models is based on
+field of sets. A probabilistic model (or probability space) is a triple
+$(\Omega, \set{F}, \pr)$, where $\Omega$ is a set of \emph{atomic
+  events} (also called atoms, outcomes or worlds), and
+$(\Omega, \set{F})$ is a field of sets and $\pr$ is a real-valued
+(probability) function on $\set{F}$ such that
+\begin{enumerate}[({K}1)]
+\item $\pr(\alpha) \geq 0$;
+\item $\pr(\Omega) = 1$;
+\item $\pr(\alpha \cup \beta)=\pr(\alpha)+\pr(\beta)$ for disjoint
+  events $\alpha$ and $\beta$.
+\end{enumerate}
+
+The two definitions are equivalent. To see this, consider a universe
+$\Omega$ whose elements are the valuations of a language
+$\set{L}(X_1,\dotsc,X_n)$ and define $\set{F}$ to be the sets
+\begin{equation} \label{field-of-sets}
+  \alpha_\phi = \{ \nu \in \Omega: \nu \models \phi \} \,,
+\end{equation}
+where $\phi \in \set{L}$. By identifying intersection with conjunction,
+union with disjunction and negation with complement, it is easy to
+verify that $\set{F}$ is indeed a field of sets. For example, for any events $\alpha_\phi$ and $\alpha_\psi$ we have that
+\begin{align}
+  \alpha_\phi \cup \alpha_\psi &= \{ \nu \in \Omega: \nu \models \phi \} \cup \{ \nu \in \Omega: \nu \models \psi \}\\
+  & = \{ \nu \in \Omega: \nu \models \phi \text{ or } \nu \models \psi \}\\
+  & = \alpha_{\phi \vee \psi} \, .
+\end{align}
+The converse is also true. Associate with every atomic event a binary
+variable. Then every event in $\set{F}$ is a union of variable
+assignments.
+
+\subsection{Tree-structured representations of formulas}
+
+Sentences can be efficiently represented and manipulated in a computer
+as trees. An expression tree is a binary tree whose internal nodes are
+labeled with logical connectives ($\wedge, \vee, \neg$) and whose leaves
+are labeled with variable assignments (e.g., $X=x$). Trees with a single
+node represent variable assignments. The evaluation of an expression
+tree takes a valuation and returns a true/false value. IT is inductively
+defined as follows. The evaluation of a one-node tree $X=x$ with respect
+to a valuation $\nu$ is true if $\nu(X)=x$ and false otherwise. Let $T$
+be a tree whose root node is annotated with $\wedge$ and have children
+$T_1$ and $T_2$. The evaluation of $T$ with respect to a valuation $\nu$
+is true if $T_1$ and $T_2$ evaluates to true (w.r.t.~$\nu$) and false
+otherwise. The evaluation of trees with other connectives as root is
+analogous. A tree represents a sentence if a valuation satisfies the
+sentence if and only if the tree evaluates to true under that valuation.
+
+\section{Solution to the Exercises}
+
+\subsection{Exercise 1} The following facts are true:
+\begin{enumerate}
+\item For any event $\alpha$, it follows that
+  $\pr(\alpha)=1-\pr(\alpha^\mathsf{c})$, where $\alpha^\mathsf{c}$ is
+  the complement of $\alpha$. 
+\item $\pr(\emptyset)=0$.
+\item If $\alpha \subseteq \beta$ are events then
+  $\pr(\alpha) \leq \pr(\beta)$.  This is called \emph{monotonicity}.
+\item For any event $\alpha$, we have that $0 \leq \mathbb{P}(\alpha) \leq 1$.
+\item For any events $\alpha$ and $\beta$ (not necessarily disjoint), we have that $\pr(\alpha \cup \beta) = \pr(\alpha) + \pr(\beta) - \pr(\alpha \cap \beta)$.
+\item If $\pr(\alpha)=1$ for some event $\alpha$ then $\pr(\beta)=\pr(\alpha \cap \beta)$ for any event $\beta$.
+\end{enumerate}
+Write proof.
+
+State and solve remaining exercises.
+
+
+\section{The ProbLogic Library}
+
+The ProbLogic library implements the basic mechanisms for representing
+and querying probabilistic models specified in generalized propositional
+logic with a finite vocabulary.
+
+\subsection{API}
+
+The basic functions and data types regarding probabilistic models are
+delared in \verb|problogic.h|. A variable in the library takes
+non-negative integer values (e.g., $0,1,2,3$), and is represented by the
+struct:
+\begin{code}
+typedef struct {
+  char* name; /* user-friendly name */
+  int size;   /* domain size */
+} variable;
+\end{code}
+
+A probabilistic model is represented as:
+\begin{code}
+typedef struct {
+  int n;          /* the size of the vocabulary */
+  int size;       /* size of the event space */
+  variable **vars;/* list of (pointers) variables */
+  double *p;      /* the distribution of valuations */
+} model;
+\end{code}
+
+The function \verb|createModel| instantiates a new model over an list of
+variables. For example, a probabilistic model of two loaded coins which
+land heads with probability 0.2 can be specified by:
+\begin{code}
+variable **vars = malloc(2*sizeof(variable*));
+vars[0] = malloc(sizeof(variable));
+vars[0]->name = malloc(6*sizeof(char));
+vars[0]->name = "coin1";
+vars[0]->size = 2; /* heads=1, tails=0 */
+vars[1] = malloc(sizeof(variable));
+vars[1]->name = malloc(6*sizeof(char));
+vars[1]->name = "coin2";
+vars[1]->size = 2;
+model *m = createModel(2, vars);
+m->p[0] = 0.64; /* coin1=0, coin2=0 */
+m->p[1] = 0.16; /* coin1=0, coin2=1 */
+m->p[2] = 0.16; /* coin1=1, coin2=0 */
+m->p[3] = 0.04; /* coin1=1, coin2=1 */
+\end{code}
+
+For models over Boolean variables (i.e., variables take two values), the function \verb|createBooleanModel| is convenient:
+\begin{code}
+  int i;
+  double p[] = {.576, .144, .064, .016, .008, .032, .032, .128};
+  model *alarm = createBooleanModel(3);
+  for (i=0; i < alarm->size; i++) alarm->p[i] = p[i]; 
+  display(alarm);  /* shows useful information about model */
+\end{code}
+
+A sentence is represented by an expression tree. The data type and
+functions for building sentences (formulas) are declared in
+\verb|expression.h|. For example:
+\begin{code}
+  formula *var1 = addVariable(0);
+  formula *var2 = addVariable(1);
+  formula *var3 = addVariable(2);
+  formula *not  = addNot(var3);
+  formula *and  = addOperation(AND, var2, not);
+  formula *or   = addOperation(OR, var1, and);
+\end{code}
+
+The \verb|query| function in \verb|problogic.h| computes the probability
+of a sentence.
+\begin{code}
+  formula **f;  
+  formula *marginals[] = {var1, var2, var3, NULL};
+  for (f = marginals; *f != NULL; f += 1) {
+    printf("Prob{"); printFormula(*f); printf("} = %.4f\n", query(*f, alarm));
+  }
+  printf("Prob{"); printFormula(or); printf("} = %.4f\n", query(or, alarm));
+\end{code}
+
+\subsection{User interface}
+
+The file \emph{main.c} reads a model and a query from file (or stdin)
+and outputs the corresponding values. Its executable is the file
+\emph{query}. The format of the input file is given by the following
+grammar in EBNF:
+\begin{center}
+\begin{tabular}{rl}
+  input &:= ``model'',  \{ variable \},  distribution,  \{ query \};\\
+  variables & :=   ``var'',  string, ``/'', integer, ``.'' \\
+  distribution & := ``dist'', \{ number \}, ``.''\\
+  query & :=  ``query'', expression, ``.''
+\end{tabular}
+\end{center}
+String, integer and number are defined trivially. Expression is a
+propositional logic expression (with the standard operator precedence).
+
+An example is given in the file \emph{alarm.model} provided with the
+package.
+
+
+\end{document}

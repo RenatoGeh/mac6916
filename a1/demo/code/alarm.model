@@ -1,0 +1,21 @@
+model # described in Table 3.3, page 35 of Darwiche's book
+# variables
+var Temp / 2 . # Temperature: 0=low 1=value
+var Sensor1/2 .   # Sensor 1: 0=normal 1=extreme
+var Sensor2/2.    # Sensor 2: 0=normal 1=extreme
+dist
+0.576 # 0 0 0 
+0.144 # 0 0 1 
+0.064 # 0 1 0 
+0.016 # 0 1 1 
+0.008 # 1 0 0 
+0.032 # 1 0 1 
+0.032 # 1 1 0 
+0.128 # 1 1 1 
+.
+# queries
+query not Sensor2.
+query Sensor1=0.
+query Temp = 0 .
+query Temp=1 or (Sensor1=1 and Sensor2=0).
+

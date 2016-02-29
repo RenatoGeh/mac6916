@@ -1,0 +1,112 @@
+\documentclass{amsart}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{titlesec}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage[top=1.0in,bottom=1.0in]{geometry}
+\usepackage{hyperref}
+\usepackage[singlelinecheck=false]{caption}
+\usepackage[backend=biber,url=true,doi=true,eprint=false,style=alphabetic]{biblatex}
+\usepackage{enumitem}
+\usepackage[x11names, rgb]{xcolor}
+\usepackage{tikz}
+\usepackage[justification=centering]{caption}
+\usepackage{indentfirst}
+\usepackage{bookmark}
+\usepackage{minted}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\usetikzlibrary{snakes,arrows,shapes}
+
+\addbibresource{references.bib}
+
+\newcommand\blfootnote[1]{%
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{#1}%
+  \addtocounter{footnote}{-1}%
+  \endgroup
+}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\newcommand\defeq{\mathrel{\overset{\makebox[0pt]{\mbox{\normalfont\tiny\sffamily def}}}{=}}}
+
+\algrenewcommand\algorithmicrequire{\textbf{Input}}
+\algrenewcommand\algorithmicensure{\textbf{Output}}
+
+\titleformat{\section}
+  {\normalfont\scshape\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\scshape\bfseries}{\thesubsection}{1em}{}
+\titleformat{\paragraph}
+  {\normalfont}{\theparagraph}{1em}{}
+\titleformat{\subparagraph}
+  {\normalfont}{\thesubparagraph}{1em}{}
+
+\captionsetup[table]{labelsep=space}
+
+\theoremstyle{plain}
+
+\newtheorem*{definition}{Definition}
+\newtheorem*{theorem}{Theorem}
+
+\newcommand{\set}[1]{\mathcal{#1}}
+\newcommand{\pr}{\mathbb{P}}
+\renewcommand{\implies}{\Rightarrow}
+
+\setlength{\parskip}{1em}
+
+\title[]{1. Introduction to Probabilistic Models}
+\author[]{Renato Lui Geh\\NUSP\@: 8536030}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  In this document we present the fundamentals of probabilistic models. We show the origins of
+  reasoning through generalized propositional logic and the reasons as to why probabilities have
+  shown themselves so sucessful in representing uncertainty. We then introduce probability calculus
+  and how to perform query by enumeration of values. Important concepts of probability, such as
+  belief updating, independence, random variables and conditional probability are formally
+  presented.
+\end{abstract}
+
+\section{Reasoning and Uncertainty in Artificial Intelligence}
+
+Before the advent of probability theory on uncertainty, it was believed that it was only possible
+to represent knowledge through the use of logic and other neo-calculist techniques. Although logic
+does have its praises, such as its computational ease and natural semantics that resemble human
+reasoning, it is problematic when one tackles the issue of uncertainty. When it comes to
+representing the world, propositional and first order logic must assume a binary reading of data:
+true or false. Indeed the world is not so simple, and this vision is, at best, simplistic, since we
+find that degrees of beliefs are present everywhere. For example, one can not say that all birds
+fly, for it may have its wing broken. Of course we could enumerate all instances where the given
+bird cannot fly (e.g.\ broken wing, bird species, etc), but this approach is exhausting and
+unrealistic. This issue can be ameliorated (if not solved) by the introduction of probabilities as
+a means to measure degrees of belief. We could then say that the bird has a 90\% chance of flying,
+discarding the remaining 10\% as a sum of all probabilities of an infinite set of improbable events
+that could prevent the bird from flying without having to enumerate each one of them. However the
+introduction of probability as a direct method of computing uncertainty was viewed with skepticism
+among AI researchers. Although not so welcomed at first, probability theory gained incredible
+support in the last decades, with influential researchers such as Judea Pearl actively supporting
+its use~\cite{pearl-1988}. In this report we first take a look at the formalisms of propositional
+logic when representing knowledge, analysing the semantics, properties and relationships. Once
+we are familiarized with the difficulties logic presents to uncertainty we introduce the basics
+of probability theory and how to compute simple queries.
+
+\section{Propositional Logic}
+
+
+
+\newpage
+
+\printbibliography[]
+
+\end{document}

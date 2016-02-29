@@ -1,0 +1,127 @@
+########################################
+## PROBLOGIC ###########################
+## propositional probabilistic models ##
+########################################
+
+The ProbLogic library implements the basic mechanisms for representing
+and querying probabilistic models specified in generalized propositional
+logic with a finite vocabulary.
+
+# LICENSE AND WARNING #
+
+This code is public domain. Use at your own risk. The code has _not_
+been decently tested, so it might generated undesired results, or fail
+to compile. Be aware that most features are implemented in a very
+inneficient and error-prone.
+
+# COMPILATION #
+
+Requirements:
+- c11-compatible compiler (e.g., gcc)
+- bison and flex (but any yacc compliant parser generator should suffice)
+
+To compile type `make`.
+
+# EXECUTION #
+
+Run `./alarm` to execute an example implementing one of the models in
+Darwiche's book Alternatively, you can run `./query alarm.model` to run
+the _query utility_ on the same model.
+
+# QUERY UTILITY #
+
+The executable `query` reads a model and an query from file (or stdin) formatted according to the following ENBF grammar:
+    input = "model", { variable }, distribution, { query };
+    variables = "var", string, "/", integer, "." ;
+    distribution = "dist", { number }, ".";
+    query = "query", expression, ".";
+
+String, integer and number are defined in the usual way. Expression is a
+propositional logic expression (with the standard operator precedence).
+
+An example is given in the file `alarm.model`.
+
+# API #
+
+The basic functions and data types regarding probabilistic models are
+delared in file `problogic.h`. A variable in the library takes
+non-negative integer values (e.g., 0,1,2,3), and is represented by the
+struct:
+
+    typedef struct {
+ 	 char* name; /* user-friendly name */
+	 int size; /* domain size */
+    } variable; 
+
+A probabilistic model is represented as:
+
+    typedef struct {
+  	  int n;          /* the size of the vocabulary */
+	  int size;       /* size of the event space */
+	  variable **vars;/* list of (pointers) variables */
+	  double *p;      /* the distribution of valuations */
+    } model;
+
+
+The function `createModel` instantiates a new model over an list of
+variables. For example, a probabilistic model of two loaded coins which
+land heads with probability 0.2 can be specified by:
+
+    variable **vars = malloc(2*sizeof(variable*));
+    vars[0] = malloc(sizeof(variable));
+    vars[0]->name = malloc(6*sizeof(char));
+    vars[0]->name = "coin1";
+    vars[0]->size = 2; /* heads=1, tails=0 */
+    vars[1] = malloc(sizeof(variable));
+    vars[1]->name = malloc(6*sizeof(char));
+    vars[1]->name = "coin2";
+    vars[1]->size = 2;
+    model *m = createModel(2, vars);
+    m->p[0] = 0.64; /* coin1=0, coin2=0 */
+    m->p[1] = 0.16; /* coin1=0, coin2=1 */
+    m->p[2] = 0.16; /* coin1=1, coin2=0 */
+    m->p[3] = 0.04; /* coin1=1, coin2=1 */
+
+For models over Boolean variables (i.e., variables take two values), the
+function `createBooleanModel` is convenient:
+
+    int i;
+    double p[] = {.576, .144, .064, .016, .008, .032, .032, .128};
+    model *alarm = createBooleanModel(3);
+    for (i=0; i < alarm->size; i++) alarm->p[i] = p[i]; 
+    display(alarm);  /* shows useful information about model */
+
+A (generalization propositional logic) sentence is represented by an
+expression tree. The data type and functions for building sentences
+(formulas) are declared in `expression.h`. The variables are identified
+by their ids (and not by their names). Here is an example of queries
+over the vocabulary of the previous model:
+
+    formula *var1 = addVariable(0);
+    formula *var2 = addVariable(1);
+    formula *var3 = addVariable(2);
+    formula *not  = addNot(var3);
+    formula *and  = addOperation(AND, var2, not);
+    formula *or   = addOperation(OR, var1, and);
+
+The `query` function in the file `problogic.h` computes the probability
+of a sentence. For example, to query the previous model:
+
+    formula **f;
+    formula *marginals[] = {var1, var2, var3, NULL};
+    for (f = marginals; *f != NULL; f += 1) {
+        printf("Prob{"); printFormula(*f); printf("} = %.4f\n", query(*f, alarm));
+    }
+    printf("Prob{"); printFormula(or); printf("} = %.4f\n", query(or, alarm));
+
+# FILES #
+
+- alarm.c, an example of using the API to create and query a simple model
+- alarm.model, an example of a simple model in the file format accepted by query
+- expression.{c,h}, representation and manipulation of Boolean expressions
+- main.c, source code of the query utility (reads model and query from data)
+- Makefile, script for compiling the code with auto-make
+- model.lex, tokenizer for flex
+- model.y, grammar for bison
+- problogic.{c,h}, representation and manipulation of variables and probabilistic models (including computing queries)
+- README, this file.
