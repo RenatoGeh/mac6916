@@ -1,3 +1,15 @@
+# LaTeX compilation files
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.log
+*.run.xml
+*.toc
+
+# Pygment files
+*.pygstyle
+
 # Compiled Object files
 *.slo
 *.lo
