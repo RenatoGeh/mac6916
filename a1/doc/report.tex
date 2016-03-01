@@ -483,7 +483,45 @@ the outcome of the second. An example to this is the toss of two coins. Ideally,
 should not change the probability of the second. However, when it comes to modelling the real world
 one finds that true independency between events is unrealistic. Be that as it may, it is still
 possible for an event to gain independency in relation to a second event when faced with a third.
-For instance, consider
+This is called conditional independence. When two variables $\alpha$ and $\beta$ are not
+independent when it comes to their prior probabilities but gain independency once they are
+conditioned on an another variable $\gamma$, they are said to be conditionally independent on
+$\gamma$.
+
+\begin{definition}
+  Two variables $\alpha$ and $\beta$ are independent, denoted by $\alpha \perp \beta$, iff
+  \begin{equation*}
+    \pr(\alpha\cap\beta)=\pr(\alpha)\pr(\beta)
+  \end{equation*}
+\end{definition}
+
+\begin{proposition} (Exercise 6)\\
+  Show that for any two events $\alpha$ and $\beta$ with positive probabilities the following
+  assertions are equivalent:
+  \begin{enumerate}
+    \item $\alpha$ and $\beta$ are independent
+    \item $\pr(\alpha|\beta=\pr(\beta)$
+    \item $\pr(\beta|\alpha)=\pr(\alpha)$
+  \end{enumerate}
+\end{proposition}
+
+\begin{proof}
+  If events $\alpha$ and $\beta$ are independent then, from its definition $\pr(\alpha\cap\beta)=
+  \pr(\alpha)\pr(\beta)$. From the conditional probability definition:
+
+  \begin{equation*}
+    \pr(\alpha|\beta)=\frac{\pr(\alpha\cap\beta)}{\pr(\beta)}\Rightarrow\pr(\alpha\cap\beta)=
+    \pr(\alpha|\beta)\pr(\beta)=\pr(\beta|\alpha)\pr(\alpha)
+  \end{equation*}
+
+  Applying the definition we have that:
+
+  \begin{align*}
+    &\pr(\alpha|\beta)\pr(\beta)=\pr(\alpha)\pr(\beta)\Rightarrow\pr(\alpha|\beta)=\pr(\alpha)
+    \text{\ and}\\
+    &\pr(\beta|\alpha)\pr(\alpha)=\pr(\alpha)\pr(\beta)\Rightarrow\pr(\beta|\alpha)=\pr(\beta)
+  \end{align*}
+\end{proof}
 
 \newpage
 

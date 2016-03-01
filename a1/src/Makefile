@@ -7,20 +7,17 @@ else
 	CFLAGS += -O2
 endif
 
-DEPS = distribution.o variable.o
+DEPS = jointdist.o
 
 all: run
 
 run: main.o $(DEPS)
-	g++ $^ -o $@ $(LINKS)
+	g++ $^ -o $@
 
-main.o: main.cc
+main.o: main.cc jointdist.h
 	g++ -c $(CFLAGS) $^
 
-distribution.o: distribution.cc distribution.h variable.h
-	g++ -c $(CFLAGS) $^
-
-variable.o:
+jointdist.o: jointdist.cc jointdist.h
 	g++ -c $(CFLAGS) $^
 
 .PHONY: clean
