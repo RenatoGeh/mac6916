@@ -25,7 +25,7 @@ int main(int argc, char *args[]) {
 
   puts("\nPosterior probabilities:");
 
-  //PRINTLN(.|C=true, jdist.Cond(0, false, 3, true));
+  PRINTLN(.|C=true, jdist.Cond(0, false, 3, true));
   PRINTLN(A=true|C=true, jdist.Cond(1, true, 3, true));
   PRINTLN(B=true|C=true, jdist.Cond(2, true, 3, true));
 
