@@ -36,7 +36,7 @@
 \theoremstyle{plain}
 
 \newtheorem*{definition}{Definition}
-\newtheorem*{theorem}{Theorem}
+\newtheorem{theorem}{Theorem}
 \newtheorem{proposition}{Proposition}
 
 \newcommand{\set}[1]{\mathcal{#1}}
@@ -51,471 +51,338 @@
 \begin{document}
 
 \begin{abstract}
-  In this document we present general, basic notions of bayesian networks. We show how to 
+  In this document we present general, basic notions of bayesian networks. We present a brief
+  introduction to graph theory, where we show a few elementary definitions and properties of an
+  acyclic directed graph. We introduce the concept of factors and how to perform the product of two
+  factors and the summing-out of a variable. We then focus on Bayesian networks, presenting main
+  definitions and properties related to the subject. Important concepts such as Markov's Property,
+  factoring of bayesian networks and barren nodes are formally defined. We then show common
+  bayesian structures, namely Naive Bayes, Bipartite Bayesian Networks and Polytrees.
   \vspace*{-2.5em}
 \end{abstract}
 
 \maketitle
 
-\section{Reasoning and Uncertainty in Artificial Intelligence}
+\section{Basic Notions of Graph Theory}
 
-Before the advent of probability theory on uncertainty, it was believed that it was only possible
-to represent knowledge through the use of logic and other neo-calculist techniques. Although logic
-does have its praises, such as its computational ease and natural semantics that resemble human
-reasoning, it is problematic when one tackles the issue of uncertainty. When it comes to
-representing the world, propositional and first order logic must assume a binary reading of data:
-true or false. Indeed the world is not so simple, and this vision is, at best, simplistic, since we
-find that degrees of beliefs are present everywhere. For example, one can not say that all birds
-fly, for it may have its wing broken. Of course we could enumerate all instances where the given
-bird cannot fly (e.g.\ broken wing, bird species, etc), but this approach is exhausting and
-unrealistic. This issue can be ameliorated (if not solved) by the introduction of probabilities as
-a means to measure degrees of belief. We could then say that the bird has a 90\% chance of flying,
-discarding the remaining 10\% as a sum of all probabilities of an infinite set of improbable events
-that could prevent the bird from flying without having to enumerate each one of them. However the
-introduction of probability as a direct method of computing uncertainty was viewed with skepticism
-among AI researchers. Although not so welcomed at first, probability theory gained incredible
-support in the last decades, with influential researchers such as Judea Pearl actively supporting
-its use~\cite{pearl-1988}. In this report we first take a look at the formalisms of propositional
-logic when representing knowledge, analysing the semantics, properties and relationships. Once
-we are familiarized with the difficulties logic presents to uncertainty we introduce the basics
-of probability theory and how to compute simple queries.
+A graph $G$ can be represented as an ordered pair $(V,E)$, where $V$ is the set of vertices (or
+nodes) and $E$ is the set of edges (or arcs). An edge $e\in E$ has an origin node $i\in V$ and a
+destination node $j\in V$. This edge can be represented as a pair $(i,j)$. In an undirected graph,
+$(i,j)=(j,i)$. A path from a node $n_i$ to another $n_j$ is a sequence of distinct nodes and
+distinct edges that begin and end with vertices. A connected graph is a graph where every node in
+$V$ can be reached by a path. An acyclic graph is a graph where there must not exist an infinite
+path.
 
-\section{Propositional Logic}
+Let $(x,y)$ be a pair of nodes in $V$, and $V$ is the set of nodes in an acyclic directed graph
+$G=(V,E)$. Then $x$ is a parent of $y$ iff there exists an edge $x\to y$ in $E$, where $\to$
+denotes a directed edge from node $x$ to node $y$. In this case, $y$ is a child of $x$. We will
+denote the set of parents of an arbitrary node $x$ as $Pa(x)$. Similarly, the set of children of
+$x$ is $Ch(x)$. In an acyclic directed graph (DAG), the indegree of a node $x$ is the number of
+parents of $x$, that is $deg^-(x)=|Pa(x)|$. Equivalently, the number of children of $x$ is called
+the outdegree and is denoted by $deg^+(x)=|Ch(x)|$.
 
-Be it through probabilities to represent degrees of belief or through Boolean values to represent
-truths of events, one needs to define a language to describe knowledge formally. When it comes to
-representing truths, an appropriate language is propositional logic. The atomic element in
-propositional logic is the variable. A variable $X$ takes values in a domain $\Omega$. Such value
-assignment is represented as the sentence $X=x$, for $x\in \Omega$. A sentence is defined as
-follows.
+In this report, when we refer to a graph we implicitly define it as a DAG, unless we explicitly
+specify it as otherwise. The ancestrals of a node $x$ is the set $An(x)=\{Y:(y,x)\in E$ or $(y,z)
+\in E$ and $z\in An(x)\}$, that is, $An(x)$ is a set of all nodes $y\in An(x)$ where there exists a
+path from $y$ to $x$. The descendants of $x$ is the set $De(x)$ of all nodes where there exists a
+path from a descendant node to $x$. The non-descendants of $x$, denoted by $Nd(x)$ is the set of
+nodes that are not in $De$. If a graph $G=(V,E)$ obeys the rule $|E|=O(n)$, where $n=|V|$, then it
+is said to be sparse.
+
+A sequence of nodes $x_1,\ldots,x_n$ is a topological ordering iff the graph is acyclic and if it
+obeys $i<j \implies i\in De(x_j)$.
+
+\section{Factors}
+
+Consider functions $f$ and $g$. Let $\nu$ be a valuation such that $\nu : x\mapsto dom(x)$. Then we
+define $f(x)\nu$ as a function where the set $x$ of variables is instantiated so that it satisfies
+$\nu$. For instance, let $\nu(A)=1$ and $\nu(B)=0$. Then:
+
+
+\begin{equation*}
+  f(A,B)\nu \equiv f(A=1,B=0)
+\end{equation*}
+
+The product of two functions is then defined as:
+
+\begin{align*}
+  &f(x)g(y)=h(x,y)\\
+  &h(x,y)\nu=f(x)\nu g(y)\nu
+\end{align*}
+
+We denote $\sigma(f)$ as the scope of function $f$. Note that $\sigma(h)=\sigma(f)\cup\sigma(g)$.
+The summing-out of a variable eliminates a variable $x$ from the scope of a function $f$.
+
+\begin{align*}
+  &y \in \mathbf{x} \implies \sum_y f(\mathbf{x}) = f(\mathbf{x})\nu + \sum_{\nu':\nu(A)\neq
+  \nu'(A)} f(\mathbf{x})\nu'\\
+  &y \neg\in \mathbf{x} \implies \sum_y f(\mathbf{x}) = f(\mathbf{x})
+\end{align*}
+
+If we assume that the product and variable elimination operations obey the associativity law (i.e.
+$f(x)g(y)=g(x)f(y)$) and are also comutative (i.e. $f(x)[g(y)h(z)]=[f(x)g(y)]h(z)$), we then have
+that:
+
+\begin{equation*}
+  \sum_A\sum_B f(x) = \sum_B\sum_A f(x) = \sum_{A,B} f(x)
+\end{equation*}
+
+When a variable is not present in the scope of a function, we may take the function out of the
+summation. For instance, consider the functions $f$ and $g$, with scopes $\sigma(f)=\{A,B\}$ and
+$\sigma(g)=\{C\}$. Then we have the distributive property:
+
+\begin{equation*}
+  \sum_{A} f(x)g(x) = g(x) \sum_{A} f(x)
+\end{equation*}
+
+This allows for fewer operations, since product of functions increases the number of elements,
+which, in this case, could result in redundant operations. When we deal with distribution of
+probabilities, we may refer to these functions as factors. A factor maps the instantiations of the
+variables to their respective probabilities. Conditional probability tables (CPTs) are one form of
+factor, as are joint distributions. We can see the scope of a function $\sigma(f)$ as the scope of
+the distribution. When we perform a product of functions we are actually combining all possible
+values of two distributions into one table. The summing-out, or variable elimination, of a factor
+sums out all probabilities of a variable.
+
+\section{Markov's Property}
+
+Consider a probability distribution $\pr$. Then $\pr$ satisfies Markov's Property (MP) wrt a DAG
+$G=(V,E)$ if:
+
+\begin{align*}
+  x\in V &\implies x \perp Nd(x)|Pa(x)\\
+         &\implies x \perp Nd(x)\setminus Pa(x) | Pa(x)
+\end{align*}
+
+That is, for all node $x$ in DAG $G$, $x$ is independent of the non-descendants non-parents given
+its parents. We will denote independence through a function $I$. We say that a set of nodes
+$\mathbf{x}$ is independent of a set of nodes $\mathbf{y}$ given set $\mathbf{z}$ if $I(\mathbf{x},
+\mathbf{z},\mathbf{y})$. Let $\mathbf{x}$ be the set of nodes where $\forall x \in \mathbf{x}$,
+$Pa(x)=\emptyset$, then we have that $I(\mathbf{x}, \emptyset, Nd(\mathbf{x}))$ and therefore we
+can say that all root nodes are marginally independent from their non-descendants.
+
+\section{Bayesian Networks}
+
+A Bayesian Network (BN) is composed of three elements $(G, \mathcal{L}, \pr)$, where:
 
 \begin{itemize}
-  \item A variable $X$ is a sentence.
-  \item If $\alpha$ and $\beta$ are sentences, then $\alpha \wedge \beta$, $\alpha \vee \beta$ and
-    $\neg \alpha$ are sentences.
+  \item $G$ is a DAG with nodes and edges $(V,E)$
+  \item $\mathcal{L}$ is a propositional language with variables $V$
+  \item $\pr$ is a probability function that satisfies MP wrt $G$
 \end{itemize}
 
-The sentence $\alpha \wedge \beta$ represents disjointion, $\alpha \vee \beta$ is called
-conjunction and $\neg \alpha$ negation. The symbols $\wedge$, $\vee$ and $\neg$ are called logical
-connectives and are the main constructs of propositional logic. Valuations to a variable $X$ to a
-value $x\in \Omega$ are described via a function $\nu$. We say that $\nu \models \phi$ if $\nu$
-satisfies the sentence $\phi$. That is, the valuation of $\phi$ belongs to the domain $\Omega$ that
-$\nu$ maps. If $\nu$ does not satisfy $\phi$, we say that $\nu \not\models \phi$. This means $\phi$
-is not in the domain and therefore $\nu \models \neg \phi$. For conjunction, we say that $\nu
-\models \phi \vee \psi \iff \nu \models \phi$ or $\nu \models \psi$. Similarly, $\nu \models \phi
-\wedge \psi \iff \nu \models \phi$ and $\nu \models \psi$. By guaranteeing that negation,
-conjunction and disjointion obey these rules, one defines a field of sets. A field of sets is a
-pair $(\Omega,\mathcal{F})$ where $\Omega$ is the set of valuations and $\mathcal{F}$ is the set
-of possible outcomes closed under negation, union (i.e.\ conjunction) and intersection (i.e.\
-disjointion).
+Alternatively, a BN can be seen as a directed acylic graph where nodes are related to variables in
+the probability distribution the network represents, with each variable associated with a
+conditional probability table (CPT) that enumerates all probabilities of a variable given its
+dependencies. In fact, from Markov's Property, we have that, since every node is independent of its
+non-descendants non-parents, then applying the chain rule on the full joint distribution, we have
+that:
 
-\begin{proposition} (Exercise 7)\\
-  Let $\Omega$ be the set of all valuations and $\mathcal{F}$ be the set of events.
+\begin{theorem} Factorization Theorem~\label{factor-thm}\\
+  Let $\mathcal{N}$ be a bayesian network with variables $X_1,\ldots,X_n$, then we have that:
   \begin{equation*}
-    \alpha \coloneqq \{\nu \in \Omega : \nu \models \phi\}\text{, when $\phi$ is a sentence.}
+    \pr(X_1,\ldots,X_n) = \prod_{X_i} \pr(X_i|Pa(X_i))
   \end{equation*}
-  Then $(\Omega,\mathcal{F})$ is a field of sets.
-\end{proposition}
+\end{theorem}
 
-\begin{proof}
-  To prove $(\Omega,\mathcal{F})$ is a field of sets we must show that $\mathcal{F}$ is a non-empty
-  set closed under union, intersection and complement. Let $\phi,\psi \in \Omega$, $\nu \models
-  (\phi \vee \psi) \iff \nu \models \phi$ or $\nu \models \psi$. But from our earlier assumption,
-  $\phi,\psi \in \Omega$; therefore $\mathcal{F}$ is closed under union. Similarly, $\nu \models
-  (\phi \wedge \psi) \iff \nu \models \phi$ and $\nu \models \psi$. Since both sentences $\phi,\psi
-  \in \Omega$ then $\mathcal{F}$ is closed under intersection. Finally, for an arbitrary $\phi$,
-  $\nu \models \neg \phi \iff \nu \not\models \phi$. Assume $\phi \in \Omega$. Then $\phi$
-  satisfies in $\Omega$ and therefore $\neg\phi$ does not satisfy lest we create a contradiction.
-  Thus, by the definition of satisfiabilitiy $\nu \models \neg\phi$. Now consider $\nu \not\models
-  \neg\phi$, then $\nu \models \neg(\neg\phi)$ and so $\neg\phi$ is in $\Omega$. Therefore,
-  $\mathcal{F}$ is closed under complements.
-\end{proof}
+In fact, a bayesian network is a bayesian network iff it satisfies the Factorization Theorem.
+Furthermore, the Factorization Theorem is valid iff the BN satisfies Markov's Property. As we can
+see from Theorem~\ref{factor-thm}, the full joint distribution can be found by the product of all
+conditional probabilities of a variable given its parents. These conditional probabilities are
+called conditional probability tables (CPTs), and each variable has one associated with it.
 
-\section{Probability Calculus}
+\begin{table}[h]
+  \centering{\captionsetup{justification=centering}
+    \begin{tabular}{c c | c}
+      $A$ & $B$ & $\Theta_{B|A}$\\
+      \hline
+      true & true & $0.2$\\
+      true & false & $0.4$\\
+      false & true & $0.8$\\
+      false & false & $0.6$\\
+    \end{tabular}
+    \caption{A CPT of variable $B$ with $Pa(B)=\{A\}$.}\label{cpt-1}
+  }
+\end{table}
 
-Whilst in propositional logic we had a binary set of possible values to variables, in probability
-theory we have a contiguous interval of possible valuations. These possible values represent a
-certain degree of belief that an agent may consider for an event. That is, for an event $\alpha$
-to occur in the set of possible outcomes $\omega$, we may define the degree of belief, or
-probability, as a function $\pr$ such that:
+We call the conditional probabilities $\Theta_{X_i|Pa(X_i)}$ the parameters (or the CPT of variable
+$X_i$) of the bayesian network. Each probability $\theta_{X_i=x_i|Pa(X_i)}$ is a parameter and must
+obey $\sum_{x_i} \theta_{X_i=x_i|Pa(X_i)} = 1$. For instance, $\theta_{A=true|B=true}+
+\theta_{A=false,B=true}=\theta_{A=true|B=false}+\theta_{A=false|B=false}=1$, on the CPT of
+Figure~\ref{cpt-1}. A network parameter is compatible with an instanciation $\mathbf{z}$ when all
+the values from the instantiation are the same as in the network parameter. That is, the parameter
+$\theta_{\mathbf{x}|\mathbf{u}}$ is compatible with $\mathbf{z}$ iff $\mathbf{x}\cup\mathbf{u}
+\subseteq\mathbf{z}$. We will denote this compatibility as $\theta_{\mathbf{x}|\mathbf{u}}\sim z$.
+
+\section{Barren Nodes}
+
+Let $X$ be a node and $S$ a set of nodes. $X$ is barren wrt $S$ if $\{X\}\cup De(X)\cap
+S=\emptyset$.
+
+\begin{figure}[h]
+  \captionsetup{justification=centering}
+  \centering\includegraphics[scale=0.5]{graphs/barren.png}
+  \caption{$C$ is barren wrt $S$ when $S=\{A,B,G\}$.}
+\end{figure}
+
+Consider a probability distribution $Pr_G$ that satisfies Markov's Property wrt the graph $G$. Then
+if $\mathcal{B}$ is the set of barren nodes wrt the set $S$ and $H=(V-\mathcal{B},E')$ the
+resulting graph after the removal of every node in $\mathcal{B}$ and their respective edges from
+$G$, we can afirm that $Pr_G(S)=Pr_H(S)$, where $Pr_H(V-\mathcal{B})=\prod_{X\in V-\mathcal{B}}
+Pr_G(X|Pa(X))$. That is, removing all barren nodes from the graph given a set $S$ is guaranteed for
+the value of queries to remain the same as long as the query does not reference any node in
+$\mathcal{B}$. This decreases the computational complexity when the graph is too big, since we may
+shorten it into a simpler, easier graph to compute queries on.
+
+\section{Exact Inference on Bayesian Networks}
+
+Exact inference on bayesian network is computationally intractable, since it is exponential on the
+number of elements in the distribution. In this section we see how to perform queries through
+elimination of variable, a technique to compute exact inference on bayesian networks by summing-out
+variables and multiplying factors.
+
+\subsection{Marginals}
+
+We call evidence an instantiation of variables. A marginal is the probability of evidence of a
+subset of values of variables. That is, let $\mathbf{X}=\{X_1,\ldots,X_n\}$ be the set of variables
+in the distribution, then the prior marginal distribution of $m$ variables where $m\leq n$ is:
 
 \begin{equation*}
-  \pr(\alpha) \defeq \sum_{\omega\models\alpha} \pr(\omega)
+  \pr(X_1,\ldots,X_m)=\sum_{x_{m+1},\ldots,x_n} \pr(X_1,\ldots,X_n)
 \end{equation*}
 
-In other words, the probability of event $\alpha$ to occur is the summation of every worlds $w_i$
-in which $\alpha$ is satisfiable. Of course one must guarantee that $\pr$ follows the axioms of
-probability.
-
-\begin{definition}
-  A function $\pr$ is a probability function if, for every $\alpha \in \Omega$ where $\Omega$ is
-  the set of valuations in the field of sets $(\Omega,\mathcal{F})$, $\pr$ obeys the following
-  probability axioms:
-
-  \begin{enumerate}
-    \item $\pr(\alpha) \in \mathbb{R}, \pr(\alpha) \leq 0$
-    \item $\pr(\Omega)=1$
-    \item $\pr(\bigcup_i^n \alpha_i) = \sum_i^n \pr(\alpha)$ if $\bigcap_i^n \alpha_i=\emptyset$,
-      that is, $\alpha_i$ are disjoint sets.
-  \end{enumerate}
-\end{definition}
-
-From these axioms we derive the following properties.
-
-\begin{proposition} (Exercise 1.1)\\
-  For any event $\alpha$, it follows that $\pr(\alpha)=1-\pr(\alpha^c)$, where $\alpha^c$ is
-  the complement of $\alpha$.
-\end{proposition}
-
-\begin{proof}
-  Let $\Omega$ be the space of outcomes in which $\alpha$ is contained in. Since $\alpha$ and
-  $\alpha^c$ are disjoint and exhaustive then from the axiom $\pr(\Omega)=1$, we have that
-  $\pr(\alpha)+\pr(\alpha^c)=\pr(\Omega)=1$. From there we have $\pr(\alpha)=1-\pr(\alpha^c)$.
-\end{proof}
-
-\begin{proposition} (Exercise 1.2)\\
-  $\pr(\emptyset)=0$
-\end{proposition}
-
-\begin{proof}
-  Assume that $\pr(\emptyset)>0$. From the probability axioms we have that $\pr(\alpha\cup\beta)=
-  \pr(\alpha)+\pr(\beta)$ if $\alpha$ and $\beta$ are disjoint. Then $\pr(\emptyset\cup\emptyset)=
-  \pr(\emptyset)+\pr(\emptyset)$, since an empty set is disjoint with itself. But $\emptyset\cup
-  \emptyset=\emptyset$, therefore $\pr(\emptyset)=2\pr(\emptyset)$. Which is a contradiction if
-  $\pr(\emptyset)>0$. Thus $\pr(\emptyset)=0$.
-\end{proof}
-
-\begin{proposition} (Exercise 1.3)\\
-  If $\alpha\subseteq\beta$ are events then $\pr(\alpha)\leq\pr(\beta)$. This is called
-  monotonicity.
-\end{proposition}
-
-\begin{proof}
-  Assume that $\pr(\alpha)>\pr(\beta)$ when $\alpha\subseteq\beta$. Now consider $\alpha=
-  \emptyset$: $\pr(\emptyset)>\pr(\beta)$. But $\pr(\emptyset)=0\Rightarrow0>\pr(\beta)$, and from
-  the probability axiom, $\pr(\beta)\geq0$ which is a contradiction. Therefore $\pr(\alpha)\geq
-  \pr(\beta)$.
-\end{proof}
-
-\begin{proposition} (Exercise 1.4)\\
-  For every event $\alpha$, we have that $0\leq\pr(\alpha)\leq1$.
-\end{proposition}
-
-\begin{proof}
-  From the first probability axiom we have that $\pr(\alpha)\geq0$. Consider $\pr(\alpha)>1$. From
-  $\pr(\alpha)=1-\pr(\alpha^c)$ we have that $\pr(\alpha^c)<0$ which contradicts the first
-  probability axiom. Thus $0\leq\pr(\alpha)\leq1$.
-\end{proof}
-
-\begin{proposition} (Exercise 1.5)\\
-  For any events $\alpha$ and $\beta$ (not necessarily disjoint), we have that $\pr(\alpha\cup
-  \beta)=\pr(\alpha)+\pr(\beta)+\pr(\alpha\cap\beta)$.
-\end{proposition}
-
-\begin{proof}
-  From the third axiom, $\pr(\beta)=\pr(\alpha\cap\beta)+\pr(\beta\setminus(\alpha\cap\beta))$,
-  where $\alpha\cap\beta$ and $\beta\setminus(\alpha\cap\beta)$ are disjoint. The third axiom of
-  probability, $\pr(\bigcup_i X_i)=\sum_i\pr(X_i)$, is for disjoint sets. Therefore: $\pr(\alpha
-  \cup(\beta\setminus(\alpha\cap\beta)))=\pr(\alpha)+\pr(\beta\setminus(\alpha\cap\beta))$.
-  Substituting $\pr(\beta\setminus(\alpha\cap\beta))$ with $\pr(\beta)-\pr(\alpha\cap\beta)$, $\pr(
-  \alpha\cup(\beta\setminus(\alpha\cap\beta)))=\pr(\alpha)+\pr(\beta)-\pr(\alpha\cap\beta)$. But
-  $\alpha\cup(\beta\setminus(\alpha\cap\beta))=\alpha\cup\beta$, resulting in $\pr(\alpha\cup\beta)
-  =\pr(\alpha)+\pr(\beta)-\pr(\alpha\cap\beta)$.
-\end{proof}
-
-\begin{proposition} (Exercise 1.6)\\
-  If $\pr(\alpha)=1$ for some event $\alpha$ then $\pr(\beta)=\pr(\alpha\cap\beta)$ for any
-  event $\beta$.
-\end{proposition}
-
-\begin{proof}
-  $\pr(\alpha\cup\beta)=\pr(\alpha)+\pr(\beta)-\pr(\alpha\cap\beta)$. Since $\pr(\alpha)=1$ and
-  if $\alpha$ happens with certainty then $\pr(\alpha\cup\beta)=\pr(\Omega)=1$, then $1=1+
-  \pr(\beta)-\pr(\alpha\cap\beta)\Rightarrow\pr(\beta)=\pr(\alpha\cap\beta)$.
-\end{proof}
-
-\subsection{Conditional probability}
-
-Belief updating in probability is done through conditional probabilities. Intuitively, one could
-assume belief updating as a change in belief given new evidence. For example, we could assume that
-the probability of a train arriving on time to our station is $\pr(OnTime=true)=0.3$. But say we
-receive news from our neighboring station that the train has arrived on time to their station. We
-could safely assume that this fact increases our belief that the train will arrive on time, since
-we received news it has not yet delayed. That is, given the evidence that the train has not delayed
-on the $i$-th station, our probability of our train arriving on time is $\pr(OnTime=true|
-StationDelayed_i=false)=0.8$. A probability function of the form $\pr(X|E)$ is called a conditional
-or posterior probability. The variable $X$ is called the query variable and $E$ the evidence.
-
-\begin{definition}
-  A conditional probability $\pr(\alpha|\beta)$ is defined as:
-  \begin{equation*}
-    \pr(\alpha|\beta)=\frac{\pr(\alpha\cap\beta)}{\pr(\beta)}, \pr(\beta)>0
-  \end{equation*}
-\end{definition}
-
-Just as in probabilities of the form $\pr(X)$, which are called prior probabilities, conditional
-probabilities obey the three probability axioms:
-
-\begin{enumerate}
-  \item $\pr(\alpha|\beta)\geq0$
-  \item $\pr(\Omega|\beta)=1$
-  \item $\pr(\alpha\cup\beta|\gamma)=\pr(\alpha|\gamma)+\pr(\beta|\gamma)$ for $\alpha$ and $\beta$
-    disjoint.
-\end{enumerate}
-
-\begin{proposition} (Exercise 2)\\
-  Let $\pr$ be a probability function (or some probability space). Show that for any event $\beta$
-  with $\pr(\beta)>0$ the function $\pr'(\alpha)=\pr(\alpha|\beta)$ is also a probability fuction.
-\end{proposition}
-
-\begin{proof}
-  From the definition of conditional probability:
-
-  \begin{equation*}
-    \pr(\alpha|\beta)=\frac{\pr(\alpha\cap\beta)}{\pr(\beta)}
-  \end{equation*}
-
-  Since $\pr(\beta)>0$, $\pr(\alpha\cap\beta)/\pr(\beta)$ is defined for all possible values and
-  $\pr(\alpha|\beta)\geq0$ (first axiom), because $\pr(\alpha\cap\beta)\geq0$ and $\pr(\beta)>0$.
-
-  \begin{equation*}
-    \pr(\alpha|\beta)=\frac{\pr(\alpha)+\pr(\beta)-\pr(\alpha\cup\beta)}{\pr(\beta)}\leq1
-  \end{equation*}
-
-  Because $\pr(\alpha)+\pr(\beta)-\pr(\alpha\cup\beta)\leq\pr(\beta)\Rightarrow\pr(\alpha)\leq\pr(
-  \alpha\cup\beta)$ which is true since if $X\subseteq Y$ then $\pr(X)\leq\pr(Y)$. Substituting $X$
-  for $\alpha$ and $Y$ for $\alpha\cup\beta$ we have that $\pr(\alpha)\leq\pr(\alpha\cup\beta)$.
-  Thus $\pr(\alpha|\beta)\leq1$ (second axiom). For the third axiom suppose $\alpha$ and $\gamma$
-  are disjoint.
-
-  \begin{equation*}
-    \pr(\alpha\cup\gamma|\beta)=\frac{\pr((\alpha\cup\gamma)\cap\beta)}{\pr(\beta)}=\frac{\pr((
-      \alpha\cap\beta)\cup(\gamma\cap\beta))}{\pr(\beta)}
-  \end{equation*}
-
-  $\alpha\cap\beta$ and $\gamma\cap\beta$ are disjoint since $\alpha$ and $\gamma$ are disjoint.
-  Therefore we may apply axiom three:
-
-  \begin{equation*}
-    \pr(\alpha\cap\gamma|\beta)=\frac{\pr(\alpha\cap\beta)+\pr(\gamma\cap\beta)}{\pr(\beta)}=
-    \frac{\pr(\alpha\cap\beta)}{\pr(\beta)}=\frac{\pr(\gamma\cap\beta)}{\pr(\beta)}=\pr(\alpha|
-    \beta)+\pr(\gamma|\beta)
-  \end{equation*}
-\end{proof}
-
-\subsection{Chain Rule}
-
-\begin{proposition} (Exercise 3)\\
-  For any sequence of events $\alpha_1,\ldots,\alpha_n$ we have that:
-  \begin{equation*}
-    \pr(\alpha_1\cap\ldots\cap\alpha_n)=\pr(\alpha_1)\prod_{i=2}^n\pr(\alpha_i|\alpha_1\cap\ldots
-    \cap\alpha_{i-1}
-  \end{equation*}
-\end{proposition}
-
-\begin{proof}
-  We will prove by induction. For the base $n=2$ we have, directly from the definition of
-  conditional probability:
-
-  \begin{equation*}
-    \pr(\alpha_2|\alpha_1)=\frac{\pr(\alpha_1\cap\alpha_2)}{\pr(\alpha_1)}\Rightarrow\pr(\alpha_1
-    \cap\alpha_2)=\pr(\alpha_1)\pr(\alpha_2|\alpha_1)
-  \end{equation*}
-
-  For the $k$-th case:
-
-  \begin{equation*}
-    \pr(\alpha_k|\alpha_1\cap\ldots\cap\alpha_{k-1})=\frac{\pr(\alpha_1\cap\ldots\cap\alpha_k)}
-    {\pr(\alpha_1\cap\ldots\cap\alpha_{k-1})}
-  \end{equation*}
-
-  \begin{equation*}
-    \text{(i) }\pr(\alpha_1\cap\ldots\cap\alpha_k)=\pr(\alpha_1\cap\ldots\cap\alpha_{k-1})
-      \pr(\alpha_k|\alpha_1\cap\ldots\cap\alpha_{k-1})
-  \end{equation*}
-
-  But $\pr(\alpha_1\cap\ldots\cap\alpha_{k-1})$ can be transformed into
-
-  \begin{equation*}
-    \text{(ii) }\pr(\alpha_1\cap\ldots\cap\alpha_{k-1})=\pr(\alpha_1\cap\ldots\cap\alpha_{k-2})
-      \pr(\alpha_{k-1}|\alpha_1\cap\ldots\cap\alpha_{k-2})
-  \end{equation*}
-
-  Applying (ii) in (i) we have:
-
-  \begin{equation*}
-    \pr(\alpha_1\cap\ldots\cap\alpha_k)=\pr(\alpha_1\cap\ldots\cap\alpha_{k-2})\pr(\alpha_{k-1}|
-      \alpha_1\cap\ldots\cap\alpha_{k-2})\pr(\alpha_k|\alpha_1\cap\ldots\cap\alpha_{k-1})
-  \end{equation*}
-
-  For the $(k+1)$-th case:
-
-  \begin{equation*}
-    \pr(\alpha_{k+1}|\alpha_1\cap\ldots\cap\alpha_k)=\frac{\pr(\alpha_1\cap\ldots\cap\alpha_{k+1})}
-      {\pr(\alpha_1\cap\ldots\cap\alpha_k)}
-  \end{equation*}
-
-  \begin{equation*}
-    \pr(\alpha_1\cap\ldots\cap\alpha_{k+1})=\pr(\alpha_1\cap\ldots\cap\alpha_k)\pr(\alpha_{k+1}|
-      \alpha_1\cap\ldots\cap\alpha_k)
-  \end{equation*}
-
-  But by induction hypothesis $\pr(\alpha_1\cap\ldots\cap\alpha_k)$ is true. Therefore for $n\geq2$
-  we have:
-
-  \begin{align*}
-    \pr(\alpha_1\cap\ldots\cap\alpha_n)&=\pr(\alpha_1)\pr(\alpha_2|\alpha_1)\ldots\pr(\alpha_n|
-      \alpha_1\cap\ldots\cap\alpha_{n-1})\\
-                                       &=\pr(\alpha_1)\prod_{i=2}^n\pr(\alpha_i|\alpha_1\cap\ldots
-      \cap\alpha_{i-1})
-  \end{align*}
-\end{proof}
-
-\subsection{Total Probability Rule}
-
-\begin{proposition} (Exercise 4)\\
-  Let $\alpha_1,\ldots,\alpha_n$ be a partition of $\Omega$ (i.e.\ $\bigcup_i\alpha_i=\Omega$ and
-  $\alpha_i\cap\alpha_j=\emptyset$ for $i\neq j$, $\alpha_i\neq \emptyset$). Then for any event
-  $\beta$ it follows that:
-
-  \begin{equation*}
-    \pr(\beta)=\sum_{i=1}^n\pr(\beta|\alpha_i)\pr(\alpha_i)
-  \end{equation*}
-\end{proposition}
-
-\begin{proof}
-  Since $\alpha_1,\ldots,\alpha_n$ are disjoint, then:
-
-  \begin{equation*}
-    \text{(i) }\pr(\beta\cap(\bigcup_i\alpha_i))=\pr((\beta\cap\alpha_1)\cup\ldots\cup(\beta\cap
-      \alpha_n))
-  \end{equation*}
-
-  From the definition of conditional probability, for an arbitrary $i$ we have:
-
-  \begin{equation*}
-    \text{(ii) }\pr(\beta|\alpha_i)=\frac{\pr(\beta\cap\alpha_i)}{\pr(\alpha_i)}\Rightarrow
-      \pr(\beta\cap\alpha_i)=\pr(\beta|\alpha_i)\pr(\alpha_i)
-  \end{equation*}
-
-  Applying (ii) in (i) we have:
-
-  \begin{equation*}
-    \pr(\beta\cap(\bigcup_i\alpha_i))=\pr(\beta|\alpha_1)\pr(\alpha_1)+\cdots+\pr(\beta|\alpha_n)
-      \pr(\alpha_n)
-  \end{equation*}
-
-  Since $\alpha_1,\ldots,\alpha_n$ are disjoint and exhaustive in $\Omega$, then $\beta\cap
-  (\alpha_1\cup\ldots\cup\alpha_n)=\beta\cap\Omega=\beta$. Therefore:
-
-  \begin{equation*}
-    \pr(\beta)=\sum_i\pr(\beta|\alpha_i)\pr(\alpha_i)
-  \end{equation*}
-\end{proof}
-
-\subsection{Baye's Rule}
-
-Sometimes computing the posterior probability through the joint distribution is expensive if not
-impossible. A solution to this problem is Baye's Rule.
+That is, the prior marginal distribution is the distribution summed-out over the variables that are
+not present in the prior marginal's scope. Similarly, the posterior marginal distribution is
+computed by summing-out the variables not present in the posterior marginal's scope:
 
 \begin{equation*}
-  \pr(\alpha|\beta)=\frac{\pr(\beta|\alpha)\pr(\alpha)}{\pr(\beta)}
+  \pr(X_1,\ldots,X_m|\mathbf{e})=\sum_{x_{m+1},\ldots,x_n} \pr(X_1,\ldots,X_n)
 \end{equation*}
 
-This expression facilitates finding $\pr(\alpha|\beta)$ when one already has $\pr(\beta|\alpha)$
-computed. A typical example to this is on medical applications. Consider a disease $\alpha$ and
-symptoms $\beta$. The diagnosis of a disease given the symptoms ($\pr(\alpha|\beta)$) the patient
-may be experiencing can be easily computed when one knows the symptoms the disease causes
-$\pr(\beta|\alpha)$. Baye's rule can be seen as the update of a probability after one computes the
-``future probability'' one would get.
+\subsection{Computing Queries}
 
-\begin{proposition} (Exercise 5)\\
-  Extended Baye's Rule. For any events $\alpha,\beta$ and $\gamma$ with positive probability, it
-  follows that:
+To compute the probability of an evidence in a bayesian network, we must first compute the full
+joint distribution to then compute the marginal. Once we have the full joint distribution we may
+sum-out the variables not present in the scope of the evidence, acquiring the probability of the
+marginal. To compute the full joint distribution we must recall Theorem~\ref{factor-thm}:
 
-  \begin{equation*}
-    \pr(\beta|\alpha\cap\gamma)=\frac{\pr(\alpha|\beta\cap\gamma)\pr(\beta|\gamma)}{\pr(\alpha|
-    \gamma)}
-  \end{equation*}
+\begin{equation*}
+  \pr(X_1,\ldots,X_n) = \prod_{X_i\in \mathbf{X}} \pr(X_i|Pa(X_i))
+\end{equation*}
+
+Note that in order to compute the full joint distribution we have to compute the product of all
+factors (i.e. CPTs). To alleviate the computational complexity we may apply the distributive law
+over the factors in this product. Once we have the full joint distribution, we may compute the
+marginals given the evidence.
+
+\begin{equation*}
+  \pr(\mathbf{e}=\{X_1=x_1,\ldots,X_m=x_m\}) = \sum_{x_{m+1},\ldots,x_n} \pr(x_1,\ldots,x_n)
+\end{equation*}
+
+To compute a posterior probability, we compute the probability of evidence and then apply the
+conditional probability definition. Let $\mathcal{X}$ be a set of instantiations of query
+variables, $\mathbf{X}$ the set of all variables in the bayesian network and $\mathbf{e}$ be the
+set of evidence values. Then:
+
+\begin{equation*}
+  \pr(\mathcal{X}|\mathbf{e})=\frac{\pr(\mathcal{X},\mathbf{e})}{\pr(\mathbf{e})}=
+  \frac{\sum_{\mathbf{X}\setminus(\mathcal{X}\cap\mathbf{e})} \pr(\mathbf{X})}{\sum_{\mathbf{X}
+  \setminus\mathbf{e}} \pr(\mathbf{X})}
+\end{equation*}
+
+Note that this requires the summing-out of a product over all variables. This is evidently
+exponential over the number of terms in the probability distribution.
+
+\section{Common Structures}
+
+There are structures that are commonly used due to their simplicity or specific properties. Here
+we show three of such structures: Trees, Naive Bayes, Bipartite Bayesian Networks and Polytrees.
+
+\subsection{Tree}
+
+A tree-shaped bayesian network is a BN where each node has at most one parent. Since we have no
+guarantees in relation to connectivity, this allows disconnected graphs. A disconnected graph is
+a graph where, when taking the underlying undirected graph, there exists at least one pair of nodes
+which have no path between them.
+
+\begin{figure}[h]
+  \captionsetup{justification=centering}
+  \centering\includegraphics[scale=0.5]{graphs/tree.png}
+  \caption{A tree with root nodes $A$ and $G$. The graph with root $A$ is disconnected from the
+  graph with root $G$, since there is no connecting path betweem the two graphs.}
+\end{figure}
+
+\begin{proposition} Exercise 1\\
+  The number of probability values in a tree-shaped Bayesian Network with discrete variables is
+  $\mathcal{O}((n-1)p^2)$, where $p$ is the greatest number of possible values a variable may take.
 \end{proposition}
 
 \begin{proof}
-  Applying the definition of conditional probability on $\pr(\alpha\cap\beta\cap\gamma)$ we have:
-
-  \begin{equation*}
-    \pr(\beta|\alpha\cap\gamma)=\frac{\pr(\alpha\cap\beta\cap\gamma)}{\pr(\alpha\cap\gamma)}=
-    \frac{\pr(\alpha\cap\beta\cap\gamma)}{\pr(\alpha|\gamma)\pr(\gamma)}
-  \end{equation*}
-
-  After we decompose $\pr(\alpha\cap\gamma)$ we now once again apply conditional probability:
-
-  \begin{equation*}
-    \pr(\beta|\alpha\cap\gamma)=\frac{\pr(\alpha\cap\beta\cap\gamma)}{\pr(\alpha|\gamma)
-    \pr(\gamma)}=\frac{\pr(\alpha|\beta\cap\gamma)\pr(\beta\cap\gamma)}{\pr(\alpha|\gamma)
-    \pr(\gamma)}
-  \end{equation*}
-
-  Once again we decompose $\pr(\beta\cap\gamma)$:
-
-  \begin{equation*}
-    \pr(\beta|\alpha\cap\gamma)=\frac{\pr(\alpha|\beta\cap\gamma)\pr(\beta\cap\gamma)}{\pr(\alpha|
-    \gamma)\pr(\gamma)}=\frac{\pr(\alpha|\beta\cap\gamma)\pr(\beta|\gamma)\pr(\gamma)}{\pr(\alpha|
-    \gamma)\pr(\gamma)}
-  \end{equation*}
-
-  Since we assume $\pr(\alpha),\pr(\beta),\pr(\gamma)>0$, then:
-
-  \begin{equation*}
-    \pr(\beta|\alpha\cap\gamma)=\frac{\pr(\alpha|\beta\cap\gamma)\pr(\beta|\gamma)}{\pr(\alpha|
-    \gamma)}
-  \end{equation*}
+  In a tree-shaped Bayesian network a node may have up to one parent node. The number of
+  probability values in a root node is $p_i$, where $p_i$ is the number of values a variable $i$
+  may take. An intermediary node may have $p_j^2$ probability values, since it may only have one
+  parent by definition. Consider $p$ the greatest number of possible values any variable in the
+  bayesian network may take. Then $\mathcal{O}(p)\geq\mathcal{O}(p_i)$ for any $i$. Since
+  $\mathcal{O}(p^2)\geq\mathcal{O}(p)$, a tree-shaped bayesian network must have, at maximum,
+  $(n-1)p^2+p=\mathcal{O}((n-1)p^2)$ probability values. Note that an $(n-1)p^2+p$ tree-shaped
+  bayesian network is a Naive Bayes.
 \end{proof}
 
-\subsection{Independence}
+\subsection{Naive Bayes}
 
-Two events are considered independent of each other when the outcome of the first does not impact
-the outcome of the second. An example to this is the toss of two coins. Ideally, the first toss
-should not change the probability of the second. However, when it comes to modelling the real world
-one finds that true independency between events is unrealistic. Be that as it may, it is still
-possible for an event to gain independency in relation to a second event when faced with a third.
-This is called conditional independence. When two variables $\alpha$ and $\beta$ are not
-independent when it comes to their prior probabilities but gain independency once they are
-conditioned on an another variable $\gamma$, they are said to be conditionally independent on
-$\gamma$.
+A Naive Bayes is composed of one parent, or class, and multiple children, or attributes. This
+structure is commonly used for classification, as it describes features as children and possible
+classifications as the root node. One can easily see a Naive Bayes is a tree where all non-root
+nodes are children of the root node.
 
-\begin{definition}
-  Two variables $\alpha$ and $\beta$ are independent, denoted by $\alpha \perp \beta$, iff
-  \begin{equation*}
-    \pr(\alpha\cap\beta)=\pr(\alpha)\pr(\beta)
-  \end{equation*}
-\end{definition}
+\begin{figure}[h]
+  \captionsetup{justification=centering}
+  \centering\includegraphics[scale=0.5]{graphs/naive_bayes.png}
+  \caption{A Naive Bayes with class $C$ and attributes $A_1,\ldots,A_5$.}
+\end{figure}
 
-\begin{proposition} (Exercise 6)\\
-  Show that for any two events $\alpha$ and $\beta$ with positive probabilities the following
-  assertions are equivalent:
-  \begin{enumerate}
-    \item $\alpha$ and $\beta$ are independent
-    \item $\pr(\alpha|\beta=\pr(\beta)$
-    \item $\pr(\beta|\alpha)=\pr(\alpha)$
-  \end{enumerate}
+\begin{proposition} Exercise 3\\
+  Let $\mathcal{N}$ be a Naive Bayes model with node $C$ as root node and $A_1,\ldots,A_n$ as
+  children. Then for every $A_i$, $A_i \perp A_j$, $i\neq j$.
 \end{proposition}
 
 \begin{proof}
-  If events $\alpha$ and $\beta$ are independent then, from its definition $\pr(\alpha\cap\beta)=
-  \pr(\alpha)\pr(\beta)$. From the conditional probability definition:
+  Let $\mathbf{X}$ be the set of all variables in $\mathcal{N}$. From Markov's Property, we have
+  that:
 
   \begin{equation*}
-    \pr(\alpha|\beta)=\frac{\pr(\alpha\cap\beta)}{\pr(\beta)}\Rightarrow\pr(\alpha\cap\beta)=
-    \pr(\alpha|\beta)\pr(\beta)=\pr(\beta|\alpha)\pr(\alpha)
+    A_i \perp Nd(A_i)\setminus Pa(A_i) | Pa(A_i)
   \end{equation*}
 
-  Applying the definition we have that:
+  But $Nd(A_i)\setminus Pa(A_i)=Ch(C)\setminus \{A_i\}$. Therefore $A_i \perp Ch(C)\setminus
+  \{A_i\}|Pa(A_i)$.
+\end{proof}
 
-  \begin{align*}
-    &\pr(\alpha|\beta)\pr(\beta)=\pr(\alpha)\pr(\beta)\Rightarrow\pr(\alpha|\beta)=\pr(\alpha)
-    \text{\ and}\\
-    &\pr(\beta|\alpha)\pr(\alpha)=\pr(\alpha)\pr(\beta)\Rightarrow\pr(\beta|\alpha)=\pr(\beta)
-  \end{align*}
+\subsection{Bipartite}
+
+A bipartite bayesian network is a bayesian network whose graph can be partitioned into two sets of
+nodes. Every node in the first set has at least one edge to another node in the other set, has
+no edge to a node to another element on its own set and no element in the second set has an edge
+to an element in the first set. That is, let $P_1$ and $P_2$ be two sets, $P_1\cap P_2=\emptyset$
+and $P_1\cup P_2=V$, where $V$ is the set of nodes in the bayesian network $\mathcal{N}$. Then for
+all $e\in E$, where $E$ is the set of edges in $G$, $e$ is of the form $(v_i^1,v_j^2)$, where
+$v_i^1$ is a node in $P_1$ and $v_j^2$ is a node in $P_2$.
+
+\begin{figure}[h]
+  \captionsetup{justification=centering}
+  \centering\includegraphics[scale=0.5]{graphs/bipartite.png}
+  \caption{A Bipartite Bayesian Network with partitions $P_1=\{C_1,C_2,C_3\}$ and $P_2=\{A_1,A_2,
+  A_3,A_4,A_5\}$.}
+\end{figure}
+
+\begin{proposition} Exercise 2\\
+  The number of probability values in a bipartite bayesian network with $m$ root variables and $n$
+  leaves is $\mathcal{O}(np^m+mq)$, where $p$ is the number of values a leaf may take and $q$ when
+  it is a root node.
+\end{proposition}
+
+\begin{proof}
+  For
 \end{proof}
 
 \newpage

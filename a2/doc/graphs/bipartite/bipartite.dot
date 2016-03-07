@@ -1,0 +1,18 @@
+digraph {
+  node [shape=circle];
+  C1 [label=<C<sub>1</sub>>];
+  C2 [label=<C<sub>2</sub>>];
+  C3 [label=<C<sub>3</sub>>];
+  A1 [label=<A<sub>1</sub>>];
+  A2 [label=<A<sub>2</sub>>];
+  A3 [label=<A<sub>3</sub>>];
+  A4 [label=<A<sub>4</sub>>];
+  A5 [label=<A<sub>5</sub>>];
+
+  C1 -> {A1 A2};
+  C2 -> {A1 A3 A5};
+  C3 -> {A2 A4 A1};
+
+  rank=same; C1; C2; C3;
+  rank=same; A1; A2; A3; A4; A5;
+}
