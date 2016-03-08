@@ -1,0 +1,174 @@
+Unfortunately, this code is incomplete. This README assumes code is complete.
+
+1. Compilation:
+
+To compile, run Makefile:
+  $ make
+
+2. Executing
+
+To run:
+  $ ./run
+
+3. Documentation
+
+This section explains what each file does.
+
+  3.1 main.cc:
+
+Calls bayes and computes queries.
+
+  3.2 variable.cc/.h
+
+Represents class Variable. Variable represents a variable from the full joint distribution. A
+variable contains a name and possible values it may take. The constructor for Variable is of the
+form:
+
+Variable(std::string name, std::initializer_list<std::string> vals);
+
+Consider the following variable example:
+
+Name:   Dysp
+Values: yes, no
+
+The equivalent Variable instance would be constructed as:
+
+Variable dysp("Dysp", {"yes", "no"});
+
+  3.3 row.cc/.h
+
+Represents class Row. A row is a parameter (or row) of a CPT. A Row contains values for each
+variable in the associated CPT and a probability for those values. Its constructor is of the form:
+
+Row(std::initializer_list<std::string> vals, double pr);
+
+Consider the example above on Dysp={yes, no}. On the case where Dysp=yes, we have:
+
+Row dysp_yes({"yes"}, 0.4);
+
+If we had a CPT with multiple variables, we'd have something like:
+
+Row row({"val_1", "val_2", "val_3"}, 0.66);
+
+  3.4 cpt.cc/.h
+
+Represents class Cpt. Cpt represents a conditional probability table. Each table has a scope and
+parameters associated with it. Scope is a set of variables the CPT contains. Parameters are the
+values and probabilities of the CPT. The constructor for Cpt is of the form:
+
+Cpt(Variable self, Variable parents[], Row rows[]);
+
+Arguments parents and rows can either be std::vectors or std::initializer_lists. For instance,
+consider the following CPT:
+
+  A   B  | Pr(B|A)
+ -----------------
+  1   1  |  0.4
+  1   0  |  0.6
+  0   1  |  0.3
+  0   0  |  0.7
+
+The equivalent Cpt instance would be constructed as:
+
+Variable A("A", {"1", "0"}), B("B", {"1", "0"});
+Cpt cpt(B, {A}, {
+  Row({"1", "1"}, 0.4),
+  Row({"1", "0"}, 0.6),
+  Row({"0", "1"}, 0.3),
+  Row({"0", "0"}, 0.7)
+});
+
+  3.5 factor.cc/.h
+
+Represents class Factor. A factor is a function that maps values of variables to a probability. A
+factor has a scope, an array of values that represent each instantiation of variables and an array
+of probabilities. Its constructor is of the form:
+
+Factor(std::vector<Variable> scope,
+       std::vector<std::vector<std::pair<std::string, std::string>>> vals,
+       std::vector<double> pr);
+
+Consider the following example based on the example above:
+
+   - P(A, B) is a probability distribution over variables A and B.
+   - A and B are binary with possible values "yes" or "no".
+   - A Factor F represents this distribution iff:
+     -> Its scope is S={A, B},
+     -> Values are of the form: {
+          {<A, "yes">, <B, "yes">},
+          {<A, "yes">, <B, "no" >},
+          {<A, "no" >, <B, "yes">},
+          {<A, "no" >, <B, "no" >}
+        }
+     -> Probabilities are ordered according to values: {0.4, 0.6, 0.3, 0.7}.
+
+The equivalent Factor instance in code:
+
+Factori f({A, B}, {
+    {{A, "yes"}, {B, "yes"}},
+    {{A, "yes"}, {B, "no" }},
+    {{A, "no" }, {B, "yes"}},
+    {{A, "no" }, {B, "no" }}
+  }, {0.4, 0.6, 0.3, 0.7});
+
+Multiplication of two factors is done by calling the static function Factor::Multiply:
+
+Let phi_1 and phi_2 be two Factors:
+  Factor m_phi = Factor::Multiply(phi_1, phi_2);
+
+Variable elimination from a Factor is done through the static function Factor::Sum:
+
+Let phi be a Factor and var be a Variable:
+  Factor s_phi = Factor::Sum(phi, var);
+
+To get the exact probability of a given instantiation, we must call Factor::Find:
+
+double Factor::Find(std::vector<std::pair<std::string, std::string>> instantiation);
+
+It returns P(instantiation), where P is the factor's probability distribution.
+
+  3.6 bayes.cc/.h
+
+Covers the actual inference functions. Constructor:
+
+Bayes(std::vector<Cpt> cpts);
+
+Bayes has pre-computed on construction a factor containing the full joint distribution of the
+Bayesian network. The collection of all CPTs is enough to compute queries. Queries are computed by
+calling Prior and Posterior. Prior computes the marginal probability of the form:
+
+  P(x_1,...,x_m)
+
+Posterior computes:
+
+  P(x_1,...,x_m|e_1,...,e_p)
+
+The equivalent functions are:
+
+double Bayes::Prior(std::vector<std::pair<std::string, std::string>> vals);
+
+double Bayes::Posterior(std::vector<std::pair<std::string, std::string>> vals,
+                        std::vector<std::pair<std::string, std::string>> evidence);
+
+Where std::pair<std::string, std::string> is a pair of the form <Varname, Varvalue>. For instance:
+
+Varname: Dysp
+Varvalue: yes
+Pair: <"Dysp", "yes">
+
+Prior marginals are computed by summing-out all variables from the full joint distribution:
+
+Factor f = full_joint_distribution;
+For every var not in X_1,...,x_m:
+  f = Factor::Sum(f, var);
+
+Bayes::Prior(x_1,...,x_m) = P(x_1,...,x_m) = f.Find(x_1,...,x_m);
+
+Posterior marginals are computed by finding the prior marginals of vals union evidence and dividing
+it by the prior marginal of evidence. That is:
+
+Bayes::Posterior(x_1,...,x_m, e_1,...,e_p) = P(x_1,...,x_m|e_1,...,e_p) =
+  = Bayes::Prior(x_1,...,x_m, e_1,...,e_p) / Bayes::Prior(e_1,...,e_p);
+
+The full joint distribution computed at construction time is done by computing the product of all
+CPTs.

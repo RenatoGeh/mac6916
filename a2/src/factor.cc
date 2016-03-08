@@ -39,11 +39,16 @@ Factor Factor::Sum(const Factor& phi, Variable var) {
   /* Number of variables in phi. */
   int n_vars = phi_scope.size();
 
-  std::vector<double> pr(phi_vals.size(), 0);
+  int lines = phi_vals.size();
+  std::vector<double> pr(lines, 0);
+  bool *check = new bool[lines];
+
+  for (int i=0;i<lines;++i)
+    check[i] = false;
 
   for (int i=0;i<p_vals;++i) {
     for (int j=0;j<n_vars;++j) {
-      auto pair_j = vals.begin()+j;
+      auto pair_j = phi_vals.begin()+j;
       if (!pair_j->first.compare(var.Name())) {
 
       }

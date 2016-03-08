@@ -358,7 +358,7 @@ nodes are children of the root node.
   \{A_i\}|Pa(A_i)$.
 \end{proof}
 
-\subsection{Bipartite}
+\subsection{Bipartite Bayesian Networks}
 
 A bipartite bayesian network is a bayesian network whose graph can be partitioned into two sets of
 nodes. Every node in the first set has at least one edge to another node in the other set, has
@@ -382,7 +382,15 @@ $v_i^1$ is a node in $P_1$ and $v_j^2$ is a node in $P_2$.
 \end{proposition}
 
 \begin{proof}
-  For
+  For every leaf variable $n_i$, the maximum number of edges originating from $n_i$ is $m$. Thus,
+  the maximum number of probability values in a node $n_i$ is $p^m$, where $p$ is the maximum
+  number of values a leaf may take. Since there are $n$ leaf nodes, the total number of probability
+  values in all the leaves is $\mathcal{O}(np^m)$. For root nodes, the number of total probability
+  values in one node does not change, since they have no parents. Therefore, the total number of
+  probabilities on all root nodes is $\mathcal{O}(mq)$, where $q$ is the maximum number of values a
+  root node may take. Summing both these totals we have that the total number of probabilities in
+  a bipartite bayesian network is $\mathcal{O}(np^m + mq)$. For a bipartite BN where root variables
+  are binary and leaves are ternary we have $n2^m+3m$ probability values.
 \end{proof}
 
 \newpage
