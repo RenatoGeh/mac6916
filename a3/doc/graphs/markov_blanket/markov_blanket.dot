@@ -1,0 +1,31 @@
+digraph {
+  node [shape=circle];
+  A [label="A"];
+  P1 [label=<Pa<sub>1</sub>(X)>];
+  P2 [label=<Pa<sub>2</sub>(X)>];
+  D [label="D"];
+  E [label="E"];
+  X [label="X"];
+  Sp [label="Sp(X)"];
+  C [label="C"];
+  C1 [label=<Ch<sub>1</sub>(X)>];
+  C2 [label=<Ch<sub>2</sub>(X)>];
+  B [label="B"];
+  SUP [label="...", shape=plaintext];
+  INF [label="...", shape=plaintext];
+
+  SUP->P2;
+  A->P1;
+  P1->X;
+  P2->X;
+  P2->D->E;
+  X->Sp;
+  X->{C1 C2};
+  Sp->{C2 C};
+  C1->B;
+  C2->INF;
+
+  rank=same; P1; P2;
+  rank=same; X; Sp;
+  rank=same; C1; C2;
+}

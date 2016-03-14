@@ -1,0 +1,11 @@
+digraph {
+  node [shape=circle];
+
+  A [label="A"];
+  B [label="B"];
+  C [label="C"];
+
+  A->B->C;
+
+  rank=same; A; B; C;
+}
