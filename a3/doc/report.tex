@@ -335,6 +335,63 @@ M-separation verifies independency in an undirected graph.
   $\perp_m$ denotes m-separation.
 \end{theorem}
 
+\section{BayesBall}
+
+\section{Exercises}
+
+This section contains the solutions to the proposed exercises from~\cite{bayes-net-darwiche}.
+
+\subsection{Exercise 4.1 (page 72)}
+
+\paragraph{a}
+
+\begin{equation*}
+  \begin{aligned}[l]
+    &A\perp F,G,H,E | C,D,B\\
+    &B\perp C,F,G | D,E,A\\
+    &C\perp D,B,E | A\\
+    &D\perp E,C | A,B
+  \end{aligned}
+  \qquad
+  \begin{aligned}[l]
+    &E\perp A,D,C,F | B\\
+    &F\perp A,B,E | C,D\\
+    &G\perp A,B,C,D,E,H | F\\
+    &F\perp A,B,C,D,G | F,E
+  \end{aligned}
+\end{equation*}
+
+\paragraph{b}
+
+\begin{align*}
+  \pr(a,b,c,d,e,f,g,h)&=\pr(a)\pr(b)\pr(c|a)\pr(d|a,b)\pr(e|b)\pr(f|c,d)\pr(g|f)\pr(h|f,e)=\\
+                      &=\theta_a\theta_b\theta_{c|a}\theta_{d|a,b}\theta_{e|b}\theta_{f|c,d}
+                      \theta_{g|f}\theta_{h|f,e}
+\end{align*}
+
+\paragraph{c}
+
+\begin{equation*}
+  \pr(A=0,B=0)=\pr(\overline{a},\overline{b})
+\end{equation*}
+
+Since we have that $A$ and $B$ are independent of all other nodes, we have that
+$\pr(a,b,c,d,e,f,g,h)=\pr(\overline{a},\overline{b})=\pr(\overline{a})\pr(\overline{b})$. Resulting
+in the following expression:
+
+\begin{equation*}
+  \pr(\overline{a},\overline{b})=\sum_{c,d,e,f,g,h}\pr(\overline{a},\overline{b},c,d,e,f,g,h)
+  =\pr(\overline{a})\pr(\overline{b})=0.8 \times 0.3 = 0.24
+\end{equation*}
+
+For $\pr(e|a)$, since we know that $E$ is independent of $A$, we can reduce $\pr(e|a)$ to the
+probability $\pr(e)$. To find the probability of $e$, consider the reduced Bayesian network
+$B\rightarrow E$. $\pr(e)=\sum_b \pr(e,b)=\sum_b \pr(b)\pr(e|b)$. Therefore we have that:
+
+\begin{equation*}
+  \pr(e|a)=\pr(e)=\sum_b \pr(b,e)=\sum_b \pr(b)\pr(e|b)=1
+\end{equation*}
+
 \newpage
 
 \printbibliography[]
