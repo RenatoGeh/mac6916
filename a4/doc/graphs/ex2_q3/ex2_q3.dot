@@ -1,0 +1,12 @@
+digraph {
+  node [shape=circle];
+  A [label="A"];
+  B [label="B"];
+  C [label="C"];
+  D [label="D"];
+
+  A -> {B C};
+  B -> D;
+  C -> D;
+  B -> C;
+}

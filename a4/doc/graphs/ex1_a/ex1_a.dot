@@ -1,0 +1,30 @@
+digraph {
+  rankdir="LR";
+  node [shape=circle];
+
+  subgraph main {
+    rank=same;
+    X [label="X"];
+    Y [label="Y"];
+    Y -> X;
+  }
+
+  subgraph An_X {
+    rank=same;
+    Ax1 [label="An'(X)"];
+    Ax2 [label="An''(X)"];
+    Ax2 -> Ax1;
+  }
+
+  subgraph An_Y {
+    rank=same;
+    Ay1 [label="An'(Y)"];
+    Ay2 [label="An''(Y)"];
+    Ay2 -> Ay1;
+  }
+
+  Y -> Ax1;
+  Ax1 -> X;
+  Ay1 -> Y;
+}
+
