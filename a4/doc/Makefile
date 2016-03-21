@@ -1,12 +1,25 @@
-file = report
-compile = pdflatex -shell-escape $(file).tex
+f_exs = exercises
+f_doc = documentation
+e_compile = pdflatex -shell-escape $(f_exs).tex
+d_compile = pdflatex -shell-escape $(f_doc).tex
 
-all:
+
+all: exs doc
+
+exs:
 	make clean; \
-	$(compile); $(compile); \
- 	biber $(file); \
- 	$(compile); $(compile) && \
- 	zathura $(file).pdf
+	$(e_compile); $(e_compile); \
+	biber $(f_exs); \
+	$(e_compile); $(e_compile) && \
+	zathura $(f_exs).pdf
+
+doc:
+	make clean; \
+	$(d_compile); $(d_compile); \
+	biber $(f_doc); \
+	$(d_compile); $(d_compile) && \
+	zathura $(f_doc).pdf
+
 
 .PHONY: clean
 clean:
