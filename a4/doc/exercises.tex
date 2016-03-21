@@ -96,21 +96,6 @@
   blocks $X$ and $Y$. Similar to our previous conjecture, for $X$ and $Y$ to be d-separated all
   trails must be blocked. Yet, $X\rightarrow Y$ is obviously unblocked, proving that $X$ and $Y$
   must be d-connected.
-
-  The resulting decisions are presented below:
-
-  \begin{description}
-    \item[] $B\perp C|A$?
-      \begin{description}
-        \item[true] $\implies$ Graph (1)
-        \item[false] $\implies$ Graph (2) or (3)
-        \item[] $B\perp C|\emptyset$?
-          \begin{description}
-            \item[true] Graph (3)
-            \item[false] Graph (2)
-          \end{description}
-      \end{description}
-  \end{description}
 \end{proof}
 
 \begin{exercise}
@@ -147,6 +132,21 @@
   From item (ii) of our previous exercise we know that there is no set $\mathbf{Z}$ in which $B$
   and $C$ are d-separated. Therefore $B\not\perp C|(\mathbf{Z}=\emptyset)\equiv I(B,\mathbf{Z}=
   \emptyset,C)=false$.
+
+  The resulting decisions are presented below:
+
+  \begin{description}
+    \item[] $B\perp C|A$?
+      \begin{description}
+        \item[true] $\implies$ Graph (1)
+        \item[false] $\implies$ Graph (2) or (3)
+        \item[] $B\perp C|\emptyset$?
+          \begin{description}
+            \item[true] Graph (3)
+            \item[false] Graph (2)
+          \end{description}
+      \end{description}
+  \end{description}
 \end{proof}
 
 \newpage
