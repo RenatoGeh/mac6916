@@ -12,9 +12,13 @@ class Valuation {
     ~Valuation(void);
 
     const utils::Array<std::pair<Variable, std::string>>& Inst(void) { return inst_; }
+    const utils::Array<Variable>& Scope(void) { return scope_; }
+    const utils::Array<std::string>& Values(void) { return vals_; }
 
   private:
     utils::Array<std::pair<Variable, std::string>> inst_;
+    utils::Array<Variable> scope_;
+    utils::Array<std::string> vals_;
 };
 
 #endif

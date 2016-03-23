@@ -74,35 +74,50 @@ Factor Factor::SumCopy(const Factor& lval, Variable rval) {
 }
 
 Factor Factor::RestrictCopy(const Factor& lval, Valuation rval) {
-  utils::Array<std::pair<Variable, std::string>>& inst = rval.Inst();
-  utils::Array<int> indeces(inst.Size());
-
+  const utils::Array<Variable>& scope = lval.Scope();
+  const utils::Array<std::pair<Variable, std::string>>& inst = rval.Inst();
+  utils::Array<int> indices(inst.Size());
+  utils::Array<Variable> m_scope = utils::Minus(rval.Scope(), lval.Scope());
+  utils::Array<int> m_indices(m_scope.Size());
   int sc_size = scope.Size();
-  int k = 0;
+  int k=0, l=0;
   int new_table_size = 1;
 
-  for (int i=0;i<sc_size;++i)
+  /* Gets all indices to the scope array that match valuation rval. */
+  for (int i=0;i<sc_size;++i) {
     if (scope[i] == inst[k].first)
-      indeces[k++] = i, new_table_size *= inst[k].first.Size();
+      indices[k++] = i, new_table_size *= inst[k].first.Size();
+    if (scope[i] == m_scope[l])
+      m_indices[l++] = i;
+  }
 
-  int table_size = cells_.Size();
-  int ind_size = indeces.Size();
+  int table_size = lval.cells_.Size();
+  int ind_size = indices.Size();
 
   k = 0;
   utils::Array<std::pair<utils::Array<std::string>, double>> n_cells(new_table_size);
 
   for (int i=0;i<table_size;++i) {
-    std::pair<utils::Array<std::string>, double>& line = cells[i];
+    std::pair<utils::Array<std::string>, double>& line = lval.cells_[i];
     bool matches = true;
+    /* Checks if line matches with valuation. */
     for (int j=0;j<ind_size;++j)
-      if (line.first[indeces[j]] != inst[j].second)
+      if (line.first[indices[j]] != inst[j].second)
         matches = false;
+    /* If it matches, create new line with line-valuation. */
     if (matches) {
-      utils::Array<std::string> new_line;
+      utils::Array<std::string> new_line(m_indices.Size());
       int old_line_size = line.first.Size();
-      n_cells[k++] = std::make_pair(
+
+      /* Gets all values that are not contained in the valuation scope. */
+      for (l=0;l<new_line.Size();++l)
+        new_line[l] = line.first[m_indices[l]];
+
+      n_cells[k++] = std::make_pair(new_line, line.second);
     }
   }
+
+  return Factor(m_scope, n_cells);
 }
 
 /* TODO. */

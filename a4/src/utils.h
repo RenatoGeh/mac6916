@@ -164,13 +164,27 @@ namespace utils {
     return trimmed;
   }
 
-  template<typename T> Array<T> Minus(const Array<T>& lval, const Array<T>& rval) {
+  /* Set minus.
+   * Note: rval must be a subset of lval.
+   */
+  template<typename T> Array<T> SubMinus(const Array<T>& lval, const Array<T>& rval) {
     int n = lval.Size(), m = rval.Size();
-    Array<T> res(std::max(n, m));
+    Array<T> res(std::max(n, m) - std::min(n, m));
 
-    int k=0;
+    int k=0, l=0;
     for (int i=0;i<n;++i)
-      if (lval[i] == rval[i])
+      if (lval[i] != rval[k])
+        res[l++] = lval[i];
+      else ++k;
+
+    return res;
+  }
+
+  /* Set minus.
+   * Note: rval can be any set.
+   */
+  template<typename T> Array<T> Minus(const Array<T>& lval, const Array<T>& rval) {
+    return  SubMinus(lval, Intersection(rval));
   }
 }
 

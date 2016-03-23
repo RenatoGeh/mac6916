@@ -74,7 +74,7 @@ class Factor {
   public:
     static Factor SumCopy(const Factor& lval, Variable rval);
     //static Factor MultiplyCopy(const Factor& lval, const Factor& rval);
-    static Factor RestrictCopy(const Factor& lval, Valuation &rval);
+    static Factor RestrictCopy(const Factor& lval, Valuation rval);
 
     //static Factor& Sum(Factor& lval, Variable rval);
     //static Factor& Multiply(Factor& lval, const Factor& rval);
