@@ -1,0 +1,19 @@
+# 0 Burglary {True, False}
+# 1 Earthquake {True, False}
+# 2 Alarm {True, False}
+# 3 JohnCalls {True, False}
+# 4 MaryCalls {True, False}
+BAYES
+5
+2 2 2 2 2
+5
+1 0 
+1 1 
+3 2 1 0
+2 3 2
+2 4 2
+2 0.01 0.99
+2 0.02 0.98
+8 0.95 0.29 0.94 0.001 0.05 0.71 0.06 0.999
+4 0.9 0.05 0.1 0.95
+4 0.7 0.01 0.3 0.99
