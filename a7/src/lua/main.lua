@@ -75,10 +75,10 @@ function eliminate_var(v, G, P)
   local pi = {}
 
   -- Transforms ne_v into a clique (multiply all factors).
-  for u1,_ in ne_v do
-    for u2,_ in ne_v do
-      if u1 ~= u2 then
-        if not G[u1][u2] then
+  for u1,_ in pairs(ne_v) do
+    if type(u1) ~= "number" then
+      for u2,_ in pairs(ne_v) do
+        if type(u2) ~= "number" and u1 ~= u2 and not G[u1][u2] then
           G[u1][u2], G[u2][u1] = true, true
           G[u1][1], G[u2][1] = G[u1][1] + 1, G[u2][1] + 1
         end
@@ -88,9 +88,11 @@ function eliminate_var(v, G, P)
   pi = Factor.multiply(phi)
 
   -- Removes node v and associated edges (sum out v).
-  for u in ne_v do
-    G[u][v], G[v][u] = nil, nil
-    G[u][1] = G[u][1] - 1
+  for u in pairs(ne_v) do
+    if type(u) ~= "number" then
+      G[u][v], G[v][u] = nil, nil
+      G[u][1] = G[u][1] - 1
+    end
   end
   G[v] = nil
   pi = Factor.sum(pi, v)
@@ -137,8 +139,51 @@ function min_degree(S, G, P)
   table.sort(M, function(a, b) return a[2] < b[2] end)
 
   for i=1,s,1 do
-    pi[i] = M[i]
-    eliminate_var(M[1], G, P)
+    pi[i] = M[i][1]
+    eliminate_var(pi[i], G, P)
+  end
+
+  return pi
+end
+
+--[[ Variable Elimination with Min-fill Heuristic.
+-- Takes scope S, interaction graph G and set of potentials P.
+-- For i=1..n, where n is the number of variables in G:
+--   Let X be the variable where the additions of edges is minimum.
+--   Eliminate variable X.
+--
+-- Returns policy pi that represents the order of elimination of each variable.
+--]]
+function min_fill(S, G, P)
+  -- Number of variables in S.
+  local s = #S
+  -- Set of variables in increasing order according to (SUM_i a[i])/2, where a[i] is the number
+  -- of edges in node i we must add after variable elimination.
+  local M = {}
+  -- Policy pi.
+  local pi = {}
+
+  for _,x in ipairs(S) do
+    local Ne = G[x]
+    for u,_ in pairs(Ne) do
+      table.insert(M, {u, 0})
+      if type(u) ~= "number" then
+        for v,_ in pairs(Ne) do
+          if type(v) ~= "number" and u ~= v and not G[u][v] then
+            M[2] = M[2] + 1
+          end
+        end
+      end
+      -- There can be at most two connections between two nodes when forming a clique.
+      M[2] = M[2] / 2
+    end
+  end
+
+  table.sort(M, function(a, b) return a[2] < b[2] end)
+
+  for i=1,s,1 do
+    p[i] = M[i][1]
+    eliminate_var(pi[i], G, P)
   end
 
   return pi
