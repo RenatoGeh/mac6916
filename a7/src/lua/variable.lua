@@ -18,3 +18,5 @@ function Variable.create(n_vals)
 
   return v
 end
+
+return Variable

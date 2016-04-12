@@ -1,0 +1,223 @@
+\documentclass{amsart}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{hyperref}
+\usepackage[singlelinecheck=false]{caption}
+\usepackage[backend=biber,url=true,doi=true,eprint=false,style=alphabetic]{biblatex}
+\usepackage{enumitem}
+\usepackage[justification=centering]{caption}
+\usepackage{indentfirst}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+
+\addbibresource{references.bib}
+
+\makeatletter
+\def\subsection{\@startsection{subsection}{3}%
+  \z@{.5\linespacing\@plus.7\linespacing}{.1\linespacing}%
+  {\normalfont\itshape}}
+\makeatother
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\newcommand\defeq{\mathrel{\overset{\makebox[0pt]{\mbox{\normalfont\tiny\sffamily def}}}{=}}}
+
+\algrenewcommand\algorithmicrequire{\textbf{Input}}
+\algrenewcommand\algorithmicensure{\textbf{Output}}
+
+\captionsetup[table]{labelsep=space}
+
+\theoremstyle{plain}
+
+\newtheorem*{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{exercise}{Exercise}
+
+\newcommand{\set}[1]{\mathcal{#1}}
+\newcommand{\pr}{\mathbb{P}}
+\renewcommand{\implies}{\Rightarrow}
+
+\setlength{\parskip}{1em}
+
+\lstset{frameround=fttt,
+  language=[5.3]Lua,
+	numbers=left,
+	breaklines=true,
+	keywordstyle=\bfseries,
+	basicstyle=\ttfamily,
+}
+
+\newcommand{\code}[1]{\lstinline[mathescape=true]{#1}}
+\newcommand{\mcode}[1]{\lstinline[mathescape]!#1!}
+
+\title[]{7. Exact Inference: Variable Elimination}
+\author[]{Renato Lui Geh\\NUSP\@: 8536030}
+
+\begin{document}
+
+\begin{abstract}
+  This document describes how variable elimination was implemented, showing its usage and
+  results.
+  \vspace*{-2.5em}
+\end{abstract}
+
+\maketitle
+
+\section{Migration from C++ to Lua}
+
+From the beginning of the course it was decided that code would be implemented in C++11. However,
+my experience throughout the semester has shown that code in C++ can become quite cumbersome. Its
+verbosity can be at times too much, leading to confusing and cluttered code. Although its lower
+level of abstraction can be seen as a powerful feature, the short deadlines mean that there is
+little time to implement the required auxiliary modules. Furthermore, since C++ is statically
+typed, certain coding shortcuts are not available, which means even more code. The lack of
+straightforward dictionaries (i.e.\ maps) is also a disadvantage.
+
+Taking all this into account, I decided to migrate all code from C++ to Lua, a dynamically typed
+script language. The ratio of actual coding to headaches is now greater than one, since native
+features in Lua allowed for simpler implementations.
+
+In this assignment I have decided to still keep the C++ files for documentation. The header files
+explain somewhat clearly what each class and method does, whilst the implementation files (i.e.\
+dot ccs) have some comments on why the methods work. Although this migration is not a port per se
+(as in there are some differences on how I perform some operations), most of what I coded in C++ is
+similar to the equivalent Lua code.
+
+\section{Code}
+
+\subsection{Factor}
+
+The Lua file \code{factor.lua} contains the following public functions.
+
+\begin{enumerate}
+  \item\label{factor_create} \code{Factor.create(S, Pr)}
+  \item\label{factor_sum} \code{Factor.sum(phi, var)}
+  \item\label{factor_multiply} \code{Factor.multiply(P)}
+\end{enumerate}
+
+\subsubsection{\code{Factor.create(S, PR)}}
+
+This function creates a new potential with scope \code{S} and ordered set of probabilities
+\code{Pr}. The potential is a Lua table with fields:
+
+\begin{itemize}
+  \item \code{scope} : Scope of variables in the potential.
+  \item \code{map} : The potential table.
+  \item \code{Pr} : Set of probabilities ordered according to the variables in \code{S}.
+  \item \code{_v} : Array of ``variances''.
+\end{itemize}
+
+The potential table \code{map} is a $d$-dimensional table, where $d=|$\code{S}$|$. To find the
+value of a complete state $\mathbf{X}$:
+
+\begin{lstlisting}[mathescape=true]
+  Let $\mathbf{X}=\{X_1=x_1,\ldots,X_n=x_n\}$ be a complete state over the variables in potential $\phi$, then the value of the potential $\phi(\mathbf{X})$ is:
+
+  $\phi(X_1=x_1,\ldots,X_n=x_n)$ = $\phi$.map[$x_1$][$x_2$]$\ldots$[$x_n$]
+\end{lstlisting}
+
+The value of an incomplete state comes naturally if it is a contiguous subset of $\mathbf{X}$
+starting from the first variable. That is, $\mathbf{Y}=\{X_1,X_2,\ldots,X_m\}$, where $m<n$. This
+is true because the value of \mcode{$\phi$[$x_1$]$\ldots$[$x_m$]} is a table that contains the
+remaining values of the probability distribution.
+
+The set of probabilities \code{Pr} is ordered according to the scope \code{S}. That is, the scope
+attributes an order to each variable, where the ``leftmost'' variable equals to the most
+significant bit and the rightmost variable the least significant bit. The array \code{Pr} is then
+set as the value of each of the bits set in an increasing order according to their bit
+significance.
+
+The array \code{_v} shows how much each bit varies in \code{Pr}. The least significant bit always
+has variance 1. Each subsequent bit is the product between the previous least significant bit's
+variance and the number of possible values that bit may take.
+
+This function calls a private function \code{combine} that recursively constructs \code{map}.
+
+\subsubsection{\code{Factor.sum(phi, var)}}
+
+This function sums out the variable \code{var} from \code{phi}.
+
+This is done by iterating over clusters of values and then summing all the values from \code{var}
+by adding an offset \code{variance} to the indeces.
+
+This offset is chosen according to its position in the table (bit position) and the number of
+possible values that variable may take.
+
+\subsubsection{\code{Factor.multiply(P)}}
+
+Multiplies all potentials in the set \code{P}.
+
+\subsection{Interaction Graph}
+
+The Lua file \code{interaction_graph.lua} contains the following public functions.
+
+\begin{enumerate}
+  \item \code{InteractionGraph.create_graph(data)}
+  \item \code{InteractionGraph.eliminate_var(v, G, P)}
+  \item \code{InteractionGraph.min_degree(S, G, P)}
+  \item \code{InteractionGraph.min_fill(S, G, P)}
+\end{enumerate}
+
+\subsubsection{\code{InteractionGraph.create_graph(data)}}
+
+Creates an interaction graph from a Bayesian Network. The argument \code{data} is a table that
+contains a list of variables \code{vars} in the bayesian network, and a list of potentials
+\code{pots}.
+
+It generates an interaction graph as an adjacency list $H$ where every key in $H$ is a variable.
+Each pair \code{(k, v)} in $H$ is a list with bayesian variable \code{k} and list of neighbours
+\code{v}. There exists an edge \mcode{var_i$\rightarrow$var_j} in $H$ iff \mcode{$H$[var_i][var_j]
+= $H$[var_j][var_i] = true}. Since Lua allows tables as keys, it was decided that a variable be
+used as key. This allows for more intuitive and readable code. The total number of neighbours a
+variable \code{var_i} is represented by \mcode{$H$[var_i][1]}.
+
+\subsubsection{\code{InteractionGraph.eliminate_var(v, G, P)}}
+
+Eliminates variable \code{v} from the interaction graph \code{G} given the potentials \code{P}.
+
+This function constructs a set of potentials $\Phi$, where every potential in $\Phi$ contains
+\code{v} in its scope, transforms \mcode{$Ne($v$)$} into a clique, which equates to multiplying
+all factors, and then removes node \code{v} and all associated edges (i.e.\ sums \code{v} out).
+After working on the graph \code{G}, it removes all potentials in $\Phi$ that are also in \code{P}
+and adds the potential $\pi$ to \code{P}, where $\pi$ is the result of the multiplication and
+summing out of all potentials $\Phi$.
+
+\subsubsection{\code{InteractionGraph.min_degree(S, G, P)}}
+
+Applies the min-degree heuristic to a Bayesian Network $\mathcal{N}=(S, G, P)$, where $S$ is the
+scope, $G$ is the interaction graph and $P$ is the set of potentials in $\mathcal{N}$.
+
+The min-degree heuristic tries to find a policy (i.e.\ order of elimination) $\pi$ where we
+construct the smallest potentials. This means we must find the variables with the smallest
+neighbourhoods. This can be accomplished by always choosing a variable \code{x} in which
+\mcode{G[x][1]} is minimum.
+
+The function returns two values. The first the an order of elimination that agrees with the
+min-degree criteria. The second is the resulting potential of the variable elimination.
+
+\subsubsection{\code{InteractionGraph.min_fill(S, G, P)}}
+
+Following the same pattern as min-degree, this function accepts a scope, interaction graph and a
+set of potentials of a bayesian network.
+
+The min-fill heuristic selects a policy $\pi$ that minimizes the number of edges constructed after
+we form a clique from nodes $Ne(X)$, where $X$ is the variable we intend on eliminating. This is
+done by iterating over all nodes and checking whether each node from $Ne(X)$ is already connected
+to their would-be neighbours. We then find a variable that minimizes this criterion.
+
+The function returns two values. First the order of elimination $\pi$ and second the resulting
+potential of all operations involved in the variable elimination procedure.
+
+\newpage
+
+\printbibliography[]
+
+\end{document}

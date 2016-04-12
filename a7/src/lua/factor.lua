@@ -70,6 +70,8 @@ function Factor.create(S, Pr)
   local phi = {
     scope = S,
     map = {},
+    Pr = Pr,
+    _v = {}  -- How much each variable changes each step.
   }
 
   if combine(S, 1, Pr, phi.map) ~= #Pr + 1 then
@@ -77,23 +79,13 @@ function Factor.create(S, Pr)
     return nil
   end
 
+  local s = #S
+  phi._v[s] = 1
+  for i=s-1,1,-1 do
+    phi._v[i] = phi._v[i+1] * #(S[i+1].vals)
+  end
+
   return phi
-end
-
--- Sums relevant cells.
-local function sum_cells(upper, depth, S)
-  if depth == 1 then
-    local sum = 0
-    for _,v in pairs(upper) do
-      sum = sum + v
-    end
-    return sum
-  end
-
-  local sum = 0
-  for i,v in pairs(upper) do
-    
-  end
 end
 
 function Factor.sum(phi, var)
@@ -107,10 +99,39 @@ function Factor.sum(phi, var)
     end
   end
 
-  local Pr = {}
-  
+  local P = phi.Pr
+  local Q, n = {}, #P
+  local vals, n_vals = var.vals, #(var.vals)
+  local variance = phi._v[i_var]
+  local s = n/n_vals -- Guaranteed for this to be an integer. See /src/cpp/factor.{h,cc}.
+  local d = 1
+
+  for i,v in ipairs(phi_scope) do
+    d = d * #(v.vals)
+    if i == i_var then break end
+  end
+
+  for i=1,s,1 do
+    Q[i] = 0
+  end
+  local m = #Q
+
+  local clusters = n/n_vals -- Also guaranteed to be an integer.
+
+  local k=0
+  for i=1,clusters,1 do
+    local y = (i-1)*n_vals
+    for j=1,n_vals,1 do
+      Q[k] = Q[k] + P[y + variance]
+    end
+    k = k + 1
+  end
+
+  return Factor.create(new_scope, Q)
 end
 
 function Factor.multiply(P)
 
 end
+
+return Factor
