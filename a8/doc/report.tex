@@ -1,0 +1,205 @@
+\documentclass{amsart}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{hyperref}
+\usepackage[singlelinecheck=false]{caption}
+\usepackage[backend=biber,url=true,doi=true,eprint=false,style=alphabetic]{biblatex}
+\usepackage{enumitem}
+\usepackage[justification=centering]{caption}
+\usepackage{indentfirst}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+
+\addbibresource{references.bib}
+
+\makeatletter
+\def\subsection{\@startsection{subsection}{3}%
+  \z@{.5\linespacing\@plus.7\linespacing}{.1\linespacing}%
+  {\normalfont\itshape}}
+\makeatother
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\newcommand\defeq{\mathrel{\overset{\makebox[0pt]{\mbox{\normalfont\tiny\sffamily def}}}{=}}}
+
+\algrenewcommand\algorithmicrequire{\textbf{Input}}
+\algrenewcommand\algorithmicensure{\textbf{Output}}
+
+\captionsetup[table]{labelsep=space}
+
+\theoremstyle{plain}
+
+\newtheorem*{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{exercise}{Exercise}
+
+\newcommand{\set}[1]{\mathcal{#1}}
+\newcommand{\pr}{\mathbb{P}}
+\renewcommand{\implies}{\Rightarrow}
+
+\setlength{\parskip}{1em}
+
+\lstset{frameround=fttt,
+  language=[5.3]Lua,
+	numbers=left,
+	breaklines=true,
+	keywordstyle=\bfseries,
+	basicstyle=\ttfamily,
+}
+
+\newcommand{\code}[1]{\lstinline[mathescape=true]{#1}}
+\newcommand{\mcode}[1]{\lstinline[mathescape]!#1!}
+
+\title[]{8. Approximate Inference: Stochastic Sampling and Message Passing}
+\author[]{Renato Lui Geh\\NUSP\@: 8536030}
+
+\begin{document}
+
+\begin{abstract}
+  This document describes how approximate inference through stochastic sampling and sum-product
+  message passing were implemented.
+  \vspace*{-2.5em}
+\end{abstract}
+
+\maketitle
+
+\section{Project decisions}
+
+It was decided that the input bayesian network $\mathcal{N}$ must have its potentials ordered such
+that, for each potential $\phi$ in $\mathcal{N}$, the node variable must come last. That is,
+consider a potential $\phi(X_i,Pa(X_i))$, the input file must be ordered such that, in order of
+appearance, $Pa(X_i)$ must come first and $X_i$ last. Consequently, the probability distribution
+must also obey such ordering.
+
+This was decided as a consequence of factor implementation. Since the potential table is stored
+recursively \mcode{$\phi$[$X_1$]$\ldots$[$X_n$]}, finding the summed-out distribution
+$\sum_{\sim \{X_n\}} \phi$, where $\sum_{\sim \{X\}} \phi \equiv \sum_{\mathbf{X}\setminus \{X\}}
+\phi$, is easier when $X_n$ is the recursive tail call result (i.e.\ the last table).
+
+For more information, see \code{sampling.lua} and \code{parser.lua}.
+
+In this document, each section is associated with a Lua module. When we refer to a function
+\code{func}, the reader must implicitly prepend the section module to its name (e.g.\
+\code{Module.func}) unless the function already contains a prefix. Local functions are always
+hidden inside the section module, thus we do not need to prepend any modules to them.
+
+\section{Stochastic sampling}
+
+The associated module is \code{Sampling}.
+
+Both logical and likelihood-weighting sampling were implemented and can be found in the
+\code{sampling.lua} source code file. Both sampling methods use functions \code{get_distribution}
+and \code{generate}. We only implement sampling for bayesian networks.
+
+Function \code{get_distribution} takes a probability distribution \code{Qr} and evidence \code{E}
+and returns a probability distribution \code{Pr} such that \code{Pr} is the result of the reduction
+of \code{Qr} given \code{E}. That is, for every instantiation $\nu$ that is not consistent with
+evidence \code{E}, delete $\nu$. Return the remaining instantiations. Since every potential is a
+conditional distribution with the evidence being parents, we are actually selecting the
+instantiations that agree with the parents' instantiations. \code{E} must have values for every
+variable node's parents.
+
+The function \code{generate} takes a probability distribution \code{Pr} and samples an
+instantiation according to $Val(X)$, where \mcode{$\{X\}=Sc($Pr$)$} and $Val(\cdot)$ is the set of
+possible values of a variable. This is done with the Lua built-in pseudo-random number generator.
+It is guaranteed to generate a uniform distribution of double-precision numbers in Linux.
+
+\subsection{Logical sampling}
+
+Logical sampling was implemented in the form of the function \code{logical}. It takes as arguments
+sets $V$, $P$, $E$ and an integer number $m$.
+
+Let $\mathcal{N}$ be the bayesian network we wish to sample. Then $V$ is the set of nodes in
+$\mathcal{N}$ ordered in a topological order such that all root nodes come first, and for every
+non-root node $V[j]=v_i \in V$, the indeces of $Pa(v_i)$ are all less than $j$. That is, every
+parent of $v_i$ must be ``behind'' $v_i$. The set $P$ is the ordered collection of potentials. For
+every variable $X_i$, the associated potential in $\mathcal{N}$ is $P_i$. The evidence set $E$ is
+ordered such that every $E_i$ can have two possible values. Either $E_i$ has a value of variable
+$X_i$ or $E_i=$\code{nil} if there is no evidence of that variable. The integer $m$ is the number
+of samples we wish to generate.
+
+Function \code{logical} first generates instantiations for the root nodes. Since root nodes have no
+dependencies, we simply generate possible instantiations with functions \code{generate} and
+\code{get_distribution}. When we encounter a non-root node, we must first build the evidence set
+according to previous instantiations. This evidence set is represented by table $s$. Once we have
+a set of possible instantiations, we call \code{generate} and \code{get_distribution}, this time
+with an evidence $s[j]$.
+
+Once we have build $m$ samples, we compute, through Monte Carlo, the probability in which the
+samples are consistent with the initial evidence $E$. This result is an approximation to the
+marginal probability $\Pr(E)$.
+
+\subsection{Likelihood-weighting sampling}
+
+The function \code{likelihood} implements likelihood-weighting sampling. It takes as arguments
+sets $V$, $P$, $E$ and an integer number $m$. These arguments are ordered the same way as in
+logical sampling and represent the same sets as the previous function.
+
+First we create a likelihood-weighting network $\mathcal{L}$ that is initially built just like
+the bayesian network $\mathcal{N}$. However, for every variable node $V_i$ in which $E_i$ is
+not \code{nil}, we replace the associated potential $P_i$ with a potential where $\phi(\mathbf{x})$
+is $1$ if $\mathbf{x}$ agrees with $E_i$ and $0$ otherwise.
+
+After we create $\mathcal{L}$, we generate samples similarly to \code{logical}, but with the
+likelihood-weighting network in place of $\mathcal{N}$ as the network model. Then, once we have
+a set of possible instantiations, we compute the probability of evidence $\Pr(E)$ and marginal
+$\Pr(X, E)$ by multiplying weights that are consistent with the evidence. Once we have the weights,
+we sum on each probability and later normalize the distribution.
+
+The resulting values are the probability of evidence and the marginal probability of each variable.
+
+\section{Message passing}
+
+The associated module is \code{Message}.
+
+We implement message passing through factor graphs according to \textit{Kschischang et al}
+\cite{factor-graphs-sp}.
+
+Function \code{factor_graph} creates a Factor Graph $\mathcal{F}=(V,E)$. It takes sets $P$ and $S$
+as arguments. $P$ is the set of potentials and $S$ is the scope of the network. Factor graph
+$\mathcal{F}$ is structured such that a function node $f_i$ represents a potential $P_i$ and a
+variable node $v_j$ is a variable $S_j$. There exists an edge $f_i\leftrightarrow v_j$ iff $v_j\in
+Sc(f_i)$. In \code{factor_graph}, we first construct the nodes in the adjacency list
+\code{adj_list}. This list is structured such that each pair \code{(key, value)} in the adjacency
+list is an equivalent pair $(n_i, Ne(n_i))$, where $n_i$ is an arbitrary node and $Ne$ is the set
+of neighbours of a variable. Once we have created the graph's nodes, we then construct each edge
+following the factor graph edge rules. Each edge contains two elements: a message passing function
+$\lambda_{ij}$ and the message $\psi_{ij}$ to be passed from node $i$ to $j$.
+
+There are two possible message passing functions. Let $f$ be a function node and $x$ be a variable
+node. Then $\lambda_{fx}$ is defined as:
+
+\begin{lstlisting}[mathescape=true]
+  $\lambda_{fx}(x)$ = function ($x$)
+    return $\sum_{\sim \{x\}} \left( f(x) \prod_{y\in Ne(x)\setminus \{x\}} \lambda_{yf}(y)\right)$
+  end
+\end{lstlisting}
+
+And $\lambda_{xf}$ is defined as:
+
+\begin{lstlisting}[mathescape=true]
+  $\lambda_{xf}(x)$ = function ($x$)
+    return $\prod_{h\in Ne(x)\setminus \{f\}} \lambda_{hx}(x)$
+  end
+\end{lstlisting}
+
+In \code{factor_graph}, $\lambda_{fx}$ is represented as \mcode{adj_list[$f$][$x$][1]}. The return
+value of $\lambda_{xy}$, $\psi_{xy}$, is stored in \mcode{adj_list[$x$][$y$][2]}.
+
+Computing the marginal of each variable is done through function \code{sp_factor}, which takes a
+factor graph $G$ and scope $S$ as arguments. It then computes each marginal $\Pr(X)$ for each
+variable $X\in S$ by computing all messages that are passed on node $X$ in graph $G$.
+
+\newpage
+
+\printbibliography[]
+
+\end{document}
