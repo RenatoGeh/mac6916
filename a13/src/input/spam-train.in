@@ -1,0 +1,35 @@
+@relation spam-or-ham-make-your-guess
+
+@attribute many-special-chars {0,1}
+@attribute word-money {0,1}
+@attribute word-sex {0,1}
+@attribute word-drugs {0,1}
+@attribute word-free {0,1}
+@attribute word-trump {0,1}
+@attribute word-pills {0,1}
+@attribute word-special {0,1}
+@attribute word-discount {0,1}
+@attribute word-buy {0,1}
+@attribute many-capital-letters {0,1}
+@attribute class-spam {0,1}
+
+@data
+1,1,0,0,1,0,0,1,1,1,0,1
+0,0,1,0,0,0,1,0,1,1,1,1
+1,1,0,0,0,1,0,0,0,1,0,1
+0,0,1,0,1,0,0,0,0,0,1,1
+0,1,1,1,0,1,0,0,0,0,0,1
+0,1,0,0,0,1,0,1,0,0,0,1
+0,0,0,0,0,1,0,0,0,0,0,0
+0,1,0,0,1,0,0,0,0,1,0,0
+1,1,1,1,1,1,1,1,1,1,1,1
+1,1,0,1,1,0,1,0,1,1,0,1
+1,0,0,0,0,0,0,0,0,0,0,0
+0,0,0,0,0,0,0,0,0,0,1,0
+1,0,1,0,1,1,0,0,0,0,0,1
+0,0,0,1,0,1,0,1,1,1,0,1
+0,0,0,0,0,0,0,0,0,1,0,0
+0,1,0,0,0,0,0,0,0,1,0,0
+0,1,0,0,0,0,0,0,1,1,0,0
+0,0,1,0,0,1,0,0,0,0,0,0
+0,0,0,0,0,0,0,0,1,1,0,0

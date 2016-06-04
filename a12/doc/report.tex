@@ -1,0 +1,171 @@
+\documentclass{amsart}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{hyperref}
+\usepackage[singlelinecheck=false]{caption}
+\usepackage[backend=biber,url=true,doi=true,eprint=false,style=alphabetic]{biblatex}
+\usepackage{enumitem}
+\usepackage[justification=centering]{caption}
+\usepackage{indentfirst}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+
+\addbibresource{references.bib}
+
+\makeatletter
+\def\subsection{\@startsection{subsection}{3}%
+  \z@{.5\linespacing\@plus.7\linespacing}{.1\linespacing}%
+  {\normalfont\itshape}}
+\makeatother
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\newcommand\defeq{\mathrel{\overset{\makebox[0pt]{\mbox{\normalfont\tiny\sffamily def}}}{=}}}
+
+\algrenewcommand\algorithmicrequire{\textbf{Input}}
+\algrenewcommand\algorithmicensure{\textbf{Output}}
+
+\captionsetup[table]{labelsep=space}
+
+\theoremstyle{plain}
+
+\newtheorem*{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{exercise}{Exercise}
+
+\newenvironment{solution}{\begin{proof}[Solution]}{\end{proof}}
+
+\newcommand{\set}[1]{\mathcal{#1}}
+\newcommand{\pr}{\mathbb{P}}
+\newcommand{\entropy}{\mathbb{H}_p}
+\newcommand{\mutinf}{\mathbb{I}_p}
+\renewcommand{\implies}{\Rightarrow}
+
+\setlength{\parskip}{1em}
+
+\lstset{frameround=fttt,
+  language=[5.3]Lua,
+	numbers=left,
+	breaklines=true,
+	keywordstyle=\bfseries,
+	basicstyle=\ttfamily,
+}
+
+\newcommand{\code}[1]{\lstinline[mathescape=true]{#1}}
+\newcommand{\mcode}[1]{\lstinline[mathescape]!#1!}
+
+\title[]{12. Score-based Structure Learning}
+\author[]{Renato Lui Geh\\NUSP\@: 8536030}
+
+\begin{document}
+
+\begin{abstract}
+  This document contains the solutions to the proposed exercises from Lecture 12.
+  \vspace*{-2.5em}
+\end{abstract}
+
+\maketitle
+
+\section{Solutions}
+
+\begin{exercise}
+  Prove that the following statements are true.
+  \begin{enumerate}[label=(\roman*)]
+    \item $0\leq \entropy(\set{X})\leq \ln |dom(\set{X})|$
+    \item $\entropy(\set{X})=0$ if and only if $p$ is degenerate (i.e., it assigns all mass to a
+      single configuration).
+    \item $\entropy(\set{X}\cup\set{Y})=\entropy(\set{X})+\entropy(\set{Y})$ if and only if
+      $\set{X}\perp\set{Y}$ (under $p$).
+  \end{enumerate}
+\end{exercise}
+
+\begin{solution}~\\
+  \begin{enumerate}[label=(\roman*)]
+    \item Assume that $\entropy(\set{X})<0$. Then $\sum_{\set{X}} p(\set{X})\ln p(\set{X})\geq 0$.
+      But since $0\leq p(\set{X})\leq 1$, $\ln p(\set{X})\leq 0$. Therefore $p(\set{X})\ln
+      p(\set{X})\leq 0$ and $\sum_{\set{X}} p(\set{X})\ln p(\set{X})\leq 0$, which contradicts our
+      earlier hypothesis. Consequently we know that $\entropy(\set{X})>0$. We also know that for
+      $p(\set{X})=1$, $\sum_X p(\set{X})\ln p(\set{X})=0$. Thus $\entropy(\set{X})\geq 0$. To find
+      the upper bound of $\entropy$, we must maximize the function wrt $p(\set{X})$. This is true
+      when all events are equiprobable. Let $n=|dom(\set{X})|$.
+      \begin{align*}
+        \max \entropy(\set{X}) &= \sum_{i=1}^n \frac{1}{n} \ln \frac{1}{n} =
+            -\sum_{i=1}^n \frac{1}{n} (\ln 1 - \ln n) =\\
+          &=-\sum_{i=1}^n \frac{1}{n}(-\ln n) =
+            (-\ln n)\underbrace{\left ( -\sum_{i=1}^n \frac{1}{n}\right )}_1 = \ln n =\\
+          &=\ln |dom(\set{X})|
+      \end{align*}
+    \item Assume a degenerate distribution where a variable $X_1$ from the distribution has all
+      mass $\Pr(X_1)=1$ and thus all $\Pr(X_2)=\ldots=\Pr(X_n)=0$ since $\sum_X \Pr(X)=1$. Then we
+      have that
+      \begin{align*}
+        &\entropy(\set{X})=-\sum_{i=1}^n \Pr(X_i)\ln\Pr(X_i)\\
+        &\entropy(\set{X})=1.\ln 1 + 0.\ln 0 + \cdots + 0.\ln 0\text{~since $p$ is degenerate.}\\
+        &\entropy(\set{X})=1\times 0 + 0 + \cdots + 0 = 0
+      \end{align*}
+      Therefore if $p$ is degenerate, then $\entropy(\set{X})=0$.
+
+      Now consider an entropy function over a distribution $p$ and $\entropy(\set{X})=0$.
+      \begin{equation*}
+        \entropy(\set{X})=0=-\sum_{i=1}^n \Pr(X_i)\ln\Pr(X_i)
+      \end{equation*}
+      The sum of all $\Pr(X_i)\ln\Pr(X_i)$ must be zero. Since each $\Pr(X_i)\ln\Pr(X_i)$ is a
+      non-positive number, then each term must be equal to zero. This is only true if either
+      $\Pr(X_i)=0$ or $\Pr(X_i)=1$. Since $\sum_{i=1}^n \Pr(X_i)=1$, there can only be one
+      $\Pr(X_i)=1$ and the rest will be equal to zero. But this is the definition of a degenerate
+      probability distribution. Thus, the converse is also true.
+    \item (Incomplete solution)\\
+      A set of variables $\set{X}$ is independent of another set of variables $\set{Y}$ if and
+      only if $p(\set{X}\cap\set{Y})=p(\set{X})p(\set{Y})$. Consider an entropy function
+      $\entropy$. Let $n=|\set{X}\cup\set{Y}|$.
+      \begin{equation*}
+        \entropy(\set{X}\cup\set{Y})=-\sum_{\set{X}\cup\set{Y}} p(\set{X}\cup\set{Y})\ln p(\set{X}
+        \cup\set{Y})
+      \end{equation*}
+      But since $\set{X}$ and $\set{Y}$ are independent: $p(\set{X}\cup\set{Y})=p(\set{X})+
+      p(\set{Y})+p(\set{X})p(\set{Y})$
+      \begin{equation*}
+        \entropy(\set{X}\cup\set{Y})=-\sum_{\set{X}\cup\set{Y}}(p(\set{X})+p(\set{Y})+p(\set{X})
+        p(\set{Y}))\ln (p(\set{X})+p(\set{Y})+p(\set{X})p(\set{Y}))
+      \end{equation*}
+  \end{enumerate}
+\end{solution}
+
+\begin{exercise}
+  Prove that the following statements are true
+  \begin{enumerate}
+    \item $\mutinf(\set{X},\set{Y})=\mutinf(\set{Y},\set{X})$
+    \item $\mutinf(\set{X},\set{Y})=\entropy(\set{X})+\entropy(\set{Y})-
+      \entropy(\set{X}\cup\set{Y})$
+    \item $\mutinf(\set{X},\set{Y})\geq 0$
+    \item $\mutinf(\set{X},\set{Y})=0$ iff $\set{X}\perp\set{Y}$ (under $p$)
+  \end{enumerate}
+\end{exercise}
+
+\begin{solution}~\\
+  \begin{enumerate}[label=(\roman*)]
+    \item
+      \begin{align*}
+        &\mutinf(\set{X},\set{Y})=\sum_{\set{X},\set{Y}} p(\set{X}\cup\set{Y})\ln
+          \frac{p(\set{X}\cup\set{Y})}{p(\set{X})p(\set{Y})}\\
+        &\mutinf(\set{Y},\set{X})=\sum_{\set{Y},\set{X}} p(\set{Y}\cup\set{X})\ln
+          \frac{p(\set{Y}\cup\set{X})}{p(\set{Y})p(\set{X})}
+      \end{align*}
+      Since probability functions are commutative under product, $\mutinf(\set{X},\set{Y})=
+      \mutinf(\set{Y},\set{X})$.
+  \end{enumerate}
+\end{solution}
+
+\newpage
+
+\printbibliography[]
+
+\end{document}
