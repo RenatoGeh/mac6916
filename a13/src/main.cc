@@ -45,6 +45,7 @@ int main(int argc, char *args[]) {
    * Result: ham
    */
   nb.Classify(nb.GetVars({2, 5, 8, 9}), {1, 1, 1, 1});
+  fputs("\n=========================\n\n", stdout);
 
   return 0;
 }

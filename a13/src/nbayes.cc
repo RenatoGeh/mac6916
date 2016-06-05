@@ -1,6 +1,7 @@
 #include "nbayes.h"
 
 #include <cstdio>
+#include <cstring>
 
 #include <vector>
 #include <deque>
@@ -15,6 +16,7 @@ NaiveBayes::NaiveBayes(std::vector<dai::Factor> nodes) : c_(nodes.front()), atts
   size_t ns = graph_.nrFactors();
   for (size_t i=0;i<ns;++i)
     joint_ *= graph_.factor(i);
+  joint_.normalize();
 
   /* n : number of attributes. */
   int n = nodes.size()-1;
@@ -24,7 +26,9 @@ NaiveBayes::NaiveBayes(std::vector<dai::Factor> nodes) : c_(nodes.front()), atts
     strides_[i-1] = strides_[i]*((joint_.vars().begin()+i)->states());
 }
 
-NaiveBayes::~NaiveBayes(void) {}
+NaiveBayes::~NaiveBayes(void) {
+  delete[] strides_;
+}
 
 double NaiveBayes::Marginal(dai::Factor& jprob, std::deque<int>& val) {
   /* Must construct a stride vector for each joint distribution. */
@@ -219,8 +223,8 @@ NaiveBayes NaiveBayes::Learn(const char *name, int n) {
   dai::Var c_var(0, n_c);
   dai::Factor c_node(c_var);
   for (int i=0;i<n_c;++i)
-    /* MLE on a single var: N[v=x]/N. */
-    c_node.set(i, ((double)N_c[i])/((double)total_N_c));
+    /* MLE on a single var: (N[v=x]+delta_i)/(N+delta_t). */
+    c_node.set(i, ((double)N_c[i]+(1./n_c))/((double)total_N_c+n_c));
   nodes.push_back(c_node);
 
   int i=1;
@@ -232,9 +236,9 @@ NaiveBayes NaiveBayes::Learn(const char *name, int n) {
     int **M = it->second, _c = 0;
     for (int j=0;j<n_M;++j)
       for (int k=0;k<n_c;++k) {
-        /* MLE on X->Y: N[X=x,Y=y]/N[Y=y]. */
+        /* MLE on X->Y: (N[X=x,Y=y]+delta_i)/(N[Y=y]+delta_t). */
         if (N_c[k] > 0)
-          phi.set(_c++, ((double)M[j][k])/((double)N_c[k]));
+          phi.set(_c++, (((double)M[j][k])+(1./n_M))/((double)N_c[k]+n_M));
         /* If N[Y=y]==0, then zero. */
         else
           phi.set(_c++, 0);
