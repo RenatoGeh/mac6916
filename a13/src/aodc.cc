@@ -97,6 +97,22 @@ std::vector<dai::Var> AODC::GetVars(std::vector<int> labels) {
   return vars;
 }
 
+namespace {
+  /* Must be delete[]d when done. */
+  int* get_data_fields(const std::string& line, int n) {
+    int *store = new int[n];
+    char *cpy = new char[line.size()+1];
+    strcpy(cpy, line.c_str());
+    char *tok = strtok(cpy, ", ");
+    for (int i=0;i<n;++i) {
+      store[i] = atoi(tok);
+      tok = strtok(NULL, ", ");
+    }
+    delete[] cpy;
+    return store;
+  }
+}
+
 AODC AODC::Learn(const char *name, int n) {
   std::ifstream file;
   file.open(name);
@@ -106,5 +122,115 @@ AODC AODC::Learn(const char *name, int n) {
     throw std::runtime_error("  Exception: failed to open file!\n");
   }
 
+  std::vector<std::pair<int, int**>> N_joint;
+  int *N_c = nullptr, n_c = 0;
+  std::string line;
 
+  /* Discards the first line (@relation). */
+  std::getline(file, line);
+  /* Discards second line (empty line). */
+  std::getline(file, line);
+
+  for (int i=0;i<n+1;++i) {
+    std::getline(file, line);
+
+    /* Assumes a long yet finite number of states. */
+    char states[102];
+    /* Assumes that nominal values (e.g. {0,1,2}) contain no spaces and are in increasing order. */
+    sscanf(line.c_str(), "%*s %*s {%s}", states);
+    /* Counts the n number of states of attribute i. There are always n-1 commas. */
+    int n_st=0;
+    for (int j=0;states[j]!='\0';++j)
+      if (states[j] == ',')
+        ++n_st;
+    ++n_st;
+    /* Pushes the number of states in i and a counting table. */
+    if (i<n)
+      N_joint.push_back(std::make_pair(n_st, new int*[n_st]));
+    else {
+      N_c = new int[n_st];
+      n_c = n_st;
+      for (int j=0;j<n_c;++j)
+        N_c[j] = 0;
+    }
+  }
+
+  /* Finds a @data line. No spaces allowed before @. */
+  while (std::getline(file, line))
+    if (!line.compare(0, 5, "@data"))
+      break;
+
+  if (std::cin.bad() || std::cin.eof()) {
+    fprintf(stderr, "IO/EOF error with file [%s]:\n", name);
+    throw std::runtime_error("  Exception: failed to read. No @data field.");
+  }
+
+  /* Initializes to zero. */
+  for (auto it=N_joint.begin();it!=N_joint.end();++it)  {
+    int n_M = it->first;
+    int **M = it->second;
+    for (int i=0;i<n_M;++i) {
+      M[i] = new int[n_c];
+      for (int j=0;j<n_c;++j)
+        M[i][j] = 0;
+    }
+  }
+
+  /* Counts. */
+  while (std::getline(file, line)) {
+    int *values = get_data_fields(line, n+1), k=0;
+    ++N_c[values[n]];
+    for (auto it=N_joint.begin();it!=N_joint.end();++it,++k) {
+      int **M = it->second;
+      ++M[values[k]][values[n]];
+    }
+    delete[] values;
+  }
+  /* Super-parent counts. */
+  int *Sp = new int[n];
+  for (int i=0;i<n;++i)
+    for (auto it=N_joint.begin();it!=N_joint.end();++it) {
+      int **M = it->second, n_M = it->first;
+      for (int j=0;j<n_M;++j)
+        for (int k=0;k<n_c;++k)
+          Sp[i] += M[j][k];
+    }
+  int total_N_c = 0;
+  for (int i=0;i<n_c;++i)
+    total_N_c += N_c[i];
+
+  /* Class node. */
+  std::vector<dai::Factor> nodes;
+  dai::Var c_var(0, n_c);
+  dai::Factor c_node(c_var);
+  for (int i=0;i<n_c;++i)
+    /* MLE on a single var: (N[v=x]+delta_i)/(N+delta_t). */
+    c_node.set(i, ((double)N_c[i]+(1./n_c))/((double)total_N_c+n_c));
+  nodes.push_back(c_node);
+
+  std::vector<dai::Var> set_jvars;
+  set_jvars.push_back(c_var);
+  int __i=1;
+  for (auto it=N_joint.begin();it!=N_joint.end();++it)
+    set_jvars.push_back(dai::Var(__i, it->first));
+  dai::Factor joint_avg(dai::VarSet(set_jvars.begin(), set_jvars.end()));
+
+  /* Average each ODC. */
+  __i=1;
+  int __j=0;
+  for (auto supa_it=N_joint.begin();supa_it!=N_joint.end();++supa_it,++__j) {
+    int n_Sp = Sp[__j];
+    for (auto it=N_joint.begin();it!=N_joint.end();++it,++__i) {
+      if (it == supa_it) continue;
+      int n_M = it->first;
+      dai::Var att_var(__i, n_M);
+      dai::Factor phi(dai::VarSet(att_var, c_var));
+      int **M = it->second, __c = 0;
+      for (int j=0;j<n_M;++j)
+        for (int k=0;k<n_c;++k)
+          phi.set(__c++, (((double)M[j][k])+(1./n_M))/((double)N_c[k]+n_M));
+    }
+  }
+
+  delete[] Sp;
 }

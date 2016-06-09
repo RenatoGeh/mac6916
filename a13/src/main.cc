@@ -25,10 +25,11 @@ int main(int argc, char *args[]) {
   fputs("\n=========================\n\n", stdout);
 
   /* Example:
-   *  I just had sex with Donald Trump.
+   *  Hey A, So, are you going to vote for Trump? MAKE HAM GREAT AGAIN! WE ARE GOING TO BUILD A
+   *  SPAM FILTER, AND MAKE THE SPAMMERS PAY FOR IT. Best regards, B.
    * Result: ham
    */
-  nb.Classify(nb.GetVars({3, 6}), {1, 1});
+  nb.Classify(nb.GetVars({6, 11}), {1, 1});
   fputs("\n=========================\n\n", stdout);
 
   /* Example:

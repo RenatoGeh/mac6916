@@ -1,0 +1,211 @@
+\documentclass{amsart}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{hyperref}
+\usepackage[singlelinecheck=false]{caption}
+\usepackage[backend=biber,url=true,doi=true,eprint=false,style=alphabetic]{biblatex}
+\usepackage{enumitem}
+\usepackage[justification=centering]{caption}
+\usepackage{indentfirst}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+
+\addbibresource{references.bib}
+
+\makeatletter
+\def\subsection{\@startsection{subsection}{3}%
+  \z@{.5\linespacing\@plus.7\linespacing}{.1\linespacing}%
+  {\normalfont\itshape}}
+\makeatother
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\newcommand\defeq{\mathrel{\overset{\makebox[0pt]{\mbox{\normalfont\tiny\sffamily def}}}{=}}}
+
+\algrenewcommand\algorithmicrequire{\textbf{Input}}
+\algrenewcommand\algorithmicensure{\textbf{Output}}
+
+\captionsetup[table]{labelsep=space}
+
+\theoremstyle{plain}
+
+\newtheorem*{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{exercise}{Exercise}
+
+\newcommand{\set}[1]{\mathcal{#1}}
+\newcommand{\pr}{\mathbb{P}}
+\newcommand{\entropy}{\mathbb{H}_p}
+\newcommand{\mutinf}{\mathbb{I}_p}
+\renewcommand{\implies}{\Rightarrow}
+
+\setlength{\parskip}{1em}
+
+\lstset{frameround=fttt,
+  language=C++,
+  numbers=left,
+  breaklines=true,
+  keywordstyle=\bfseries,
+  basicstyle=\ttfamily,
+}
+
+\newcommand{\code}[1]{\lstinline[mathescape=true]{#1}}
+\newcommand{\mcode}[1]{\lstinline[mathescape]!#1!}
+
+\title[]{10. Bayesian Network Classifiers}
+\author[]{Renato Lui Geh\\NUSP\@: 8536030}
+
+\begin{document}
+
+\begin{abstract}
+  This document contains the documentation to a Naive Bayes implementation.
+  \vspace*{-2.5em}
+\end{abstract}
+
+\maketitle
+
+\section{LibDAI}
+
+We use LibDAI~\cite{Mooij_libDAI_10} as an inference framework. LibDAI requires the following
+packages as dependencies:
+
+\begin{itemize}
+  \item gcc
+  \item make
+  \item Boost (version 1.37+)
+  \item GMP library
+  \item graphviz
+\end{itemize}
+
+Under Linux they can easily be installed via the following command:
+
+\begin{lstlisting}[language=bash]
+  # Arch Linux
+  sudo pacman -S boost boost-libs make g++ gmp lib32-gmp
+  # Ubuntu/Debian
+  apt-get install g++ make graphviz libboost-dev libboost-graph-dev libboost-program-options-dev libboost-test-dev libgmp-dev
+\end{lstlisting}
+
+Package names should be similar for other Linux distributions'. Installation is straightforward:
+
+\begin{lstlisting}[language=bash]
+  git clone https://bitbucket.org/jorism/libdai.git
+  cd libdai
+  # Choose the Makefile configuration accordingly (LINUX for Linux, MACOSX for OS X, etc.)
+  cp Makefile.LINUX Makefile.conf
+  make
+  # The following are tests. They should run fine if the build was successful
+  examples/example test/alarm.fg
+  tests/testdai --aliases test/aliases.conf --filename tests/alarm.fg --methods JTREE_HUGIN BP_SEQMAX
+  # (Optional) Install LibDAI to your user path
+  cp -R include/dai /usr/include
+  cp -R lib/* /usr/lib/
+\end{lstlisting}
+
+We assume LibDAI is installed to your user path. If that is not the case, modify the Makefile in
+\code{/src} accordingly.
+
+\section{Compiling}
+
+To compile:
+
+\begin{lstlisting}{language=bash}
+  cd src
+  make
+\end{lstlisting}
+
+To compile with \code{DEBUG=true} (i.e.\ flag \code{-g}):
+
+\begin{lstlisting}{language=bash}
+  make clean
+  make DEBUG=true
+\end{lstlisting}
+
+\section{Running an example}
+
+There is an example source code in \code{main.cc}. We use an example input dataset
+\code{input/spam-train.in}. To run:
+
+\begin{lstlisting}[language=bash]
+  ./run input/spam-train.in
+\end{lstlisting}
+
+\section{NaiveBayes}
+
+The implementation of a Naive Bayes model is in the files \code{src/nbayes.(cc/h)}. The class
+\code{NaiveBayes} represents a Naive Bayes model.
+
+\subsection{Learning}
+
+A \code{NaiveBayes} model can learned from a data file by calling the following static function:
+
+\begin{lstlisting}
+  NaiveBayes nb = NaiveBayes::Learn(const char* filename, int n);
+\end{lstlisting}
+
+The resulting model has \code{n} attribute nodes and one class node as specified in file
+\code{filename}. The input file must be structured as follows:
+
+\begin{lstlisting}[language=bash,mathescape=true]
+  @relation name-of-dataset
+
+  @attribute attribute-1 {0,1}
+  @attribute attribute-2 {0,1,2}
+  $\vdots$
+  @attribute attribute-n {0,1}
+  @attribute class {0,1}
+
+  @data
+  0,$\ldots$,0
+  $\vdots \ddots \vdots$
+  1,$\ldots$,1
+\end{lstlisting}
+
+Empty lines are not optional. Internally, \code{NaiveBayes} learns its parameters through MLE\@.
+
+\subsection{Inference}
+
+Performing classification is done with two methods:
+
+\begin{lstlisting}
+  std::vector<dai::Var> GetVars(std::vector<int> labels);
+  size_t Classify(std::vector<dai::Var> atts, std::vector<int> val, bool output=true);
+\end{lstlisting}
+
+Method \code{GetVars} takes an ordered collection of variable labels and returns a vector of
+\code{dai::Var}. Method \code{Classify} takes a vector of attribute variables and their valuations
+and returns the most probable instantiation of the class node. The optional argument \code{output}
+outputs additional information on the classification.
+
+A typical call for classification on variable labels \code{{1, 2, 5, 11}} and their
+instantiations \code{{1, 1, 1, 1}}:
+
+\begin{lstlisting}
+  Let nb be a NaiveBayes model
+  size_t c = nb.Classify(nb.GetVars({1, 2, 5, 11}, {1, 1, 1, 1}));
+\end{lstlisting}
+
+\subsection{Output}
+
+There are two \code{NaiveBayes} methods that can provide additional output on the model. Method
+\code{WriteToFile} outputs the Naive Bayes model in LibDAI format and \code{DrawGraph} outputs a
+\code{dot} file containing the underlying graph.
+
+\begin{lstlisting}
+  void NaiveBayes::WriteToFile(const char *name);
+  void NaiveBayes::DrawGraph(const char *name);
+\end{lstlisting}
+
+\newpage
+
+\printbibliography[]
+
+\end{document}

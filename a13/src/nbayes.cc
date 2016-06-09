@@ -227,21 +227,17 @@ NaiveBayes NaiveBayes::Learn(const char *name, int n) {
     c_node.set(i, ((double)N_c[i]+(1./n_c))/((double)total_N_c+n_c));
   nodes.push_back(c_node);
 
-  int i=1;
-  for (auto it=N_joint.begin();it!=N_joint.end();++it,++i) {
+  int __i=1;
+  for (auto it=N_joint.begin();it!=N_joint.end();++it,++__i) {
     int n_M = it->first;
-    dai::Var att_var(i, n_M);
+    dai::Var att_var(__i, n_M);
     /* Factor over att_var given c_var. */
     dai::Factor phi(dai::VarSet(att_var, c_var));
     int **M = it->second, _c = 0;
     for (int j=0;j<n_M;++j)
       for (int k=0;k<n_c;++k) {
         /* MLE on X->Y: (N[X=x,Y=y]+delta_i)/(N[Y=y]+delta_t). */
-        if (N_c[k] > 0)
-          phi.set(_c++, (((double)M[j][k])+(1./n_M))/((double)N_c[k]+n_M));
-        /* If N[Y=y]==0, then zero. */
-        else
-          phi.set(_c++, 0);
+        phi.set(_c++, (((double)M[j][k])+(1./n_M))/((double)N_c[k]+n_M));
       }
     nodes.push_back(phi);
   }

@@ -8,21 +8,21 @@ else
 	CFLAGS += -O2
 endif
 
-DEPS = nbayes.o aodc.o
+DEPS = nbayes.o #aodc.o
 
 all: run
 
 run: main.o $(DEPS)
 	g++ $^ -o $@ $(LIBS)
 
-main.o: main.cc nbayes.h aodc.h
+main.o: main.cc nbayes.h #aodc.h
 	g++ -c $(CFLAGS) $^
 
 nbayes.o: nbayes.cc nbayes.h
 	g++ -c $(CFLAGS) $^
 
-aodc.o: aodc.cc aodc.h
-	g++ -c $(CFLAGS) $^
+#aodc.o: aodc.cc aodc.h
+#	g++ -c $(CFLAGS) $^
 
 .PHONY: clean clean_output
 clean:
